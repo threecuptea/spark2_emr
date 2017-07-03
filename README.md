@@ -10,11 +10,11 @@
    b) I need to configure an output location (s3 buck/folder).  It needs to be unique for each run to work.  That 
       requires programming to automate it eventually.      
    c) I can inspect the results in the configured output s3 bucket/folder if running successfully.  However, I have to
-      be able to access hadoop resource manager web ui (port 8088) and spark history server (port 18080) to debug. 
-      The requires the following a couple of steps:      
+      be able to access hadoop resource manager web ui (port:8088) and spark history server web ui (port:18080) to debug. 
+      This requires the following a couple of steps:      
       i)  Provision instances with a key pair.      
       ii) EMR uses security group ElasticMapReduce-master and ElasticMapReduce-slave to provision master and slave 
-          instances. That's not replacable.  However. we can add additional rule to those security groups. We have to 
+          instances. Those are not replacable.  However. we can add additional rule to those security groups. We have to 
           at least add SSH rule to ElasticMapReduce-master so that we can access the master instance.  
           See http://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-connect-master-node-ssh.html. For example.
                     
@@ -23,8 +23,9 @@
       iii)Configure SSH tunnel using local port forwarding to port 8088 and 18080 of the master public DNS.  
       See http://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-web-interfaces.html for other web ui.  -L 
       signifies the use of local port forwarding.   
-      see http://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-ssh-tunnel-local.html for SSH tunnel. For example
-         
+      see http://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-ssh-tunnel-local.html for SSH tunnel. 
+      For example (To keep in forwarding state. Stay there once execute them and not to Ctrl-C) 
+      
           ssh -i ./emr-spark.pem -N -L 8088:ec2-54-189-237-167.us-west-2.compute.amazonaws.com:8088 hadoop@ec2-54-189-237-167.us-west-2.compute.amazonaws.com
           ssh -i ./emr-spark.pem -N -L 18080:ec2-54-189-237-167.us-west-2.compute.amazonaws.com:18080 hadoop@ec2-54-189-237-167.us-west-2.compute.amazonaws.com
    
