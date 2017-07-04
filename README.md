@@ -1,7 +1,7 @@
 ### spark2_emr collects spark2 projects deployed in AWS EMR cluster.  A lot of companies deployed Spark applications on AWS EMR to take advantage its integrated environments.  The purpose is to be familiar with AWS EMR and futher migrate my spark_tutorial_2 and spark_python_16 projects to EMR.  Automate and run Spark2 applications in real world.
 #### The topics include:
 
-1. Flight Sample: this is inpired by the example https://aws.amazon.com/blogs/aws/new-apache-spark-on-amazon-emr/.  
+1. My FlightSample: this is inpired by the example https://aws.amazon.com/blogs/aws/new-apache-spark-on-amazon-emr/.  
    I successfully created spark2-EMR cluster and ran the flight sample spark application and output results to the 
    designated s3 bucket/ folder.  The take away is that
    
@@ -38,3 +38,27 @@
       apache hadoop and apache spark.      
    f) I scp files under /etc/hadoop/conf and /etc/spark/conf from the master instance and store under flight/etc 
       for references. Check spark-default.conf and spark-env.sh to see how EMR does lots of plumbing work.    
+      
+   Here is the result of my version of FlightSample. 
+       
+       
+      Job Id Description                       Duration Stages: Succeeded/Total	Tasks Succeeded/Total
+      6 csv at FlightSample.scala:57		          10 s		        3/3 			       222/222
+      5 csv at FlightSample.scala:53		           2 s		        3/3 			        222/222
+      4 csv at FlightSample.scala:48		           4 s		        3/3 			        222/222
+      3 parquet at FlightSample.scala:43	    4 s		        3/3 			        222/222
+      2 json at FlightSample.scala:38		          6 s		        3/3 		 	       222/222
+      1 csv at FlightSample.scala:33		      1.6 min		      3/3 			        222/222
+      0 parquet at FlightSample.scala:22 	   13 s		      1/1			                 1/1
+      
+   I made two major improvement 
+   1. I cache the common set.  All output must be >= 2000 year and I only concerns of a few fields
+   2. I coalesce to less partitions since we fliter out data < 2000 year. 
+      
+   That's the following line
+        
+    val partitions = rawDF.rdd.getNumPartitions
+    var adjPartition = partitions - partitions / 3 -1  //expect at least 1/3 < 2000
+    val flightDS = rawDF.filter($"year" >= 2000).select($"quarter", $"origin", $"dest", $"depdelay", $"cancelled")
+                        .coalesce(adjPartition).cache() 
+   The performance improves a lot.  It only executes file scan once.  That's in job 1. The rest of jobs re-use cache().           
