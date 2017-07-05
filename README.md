@@ -39,8 +39,8 @@
    f) I scp files under /etc/hadoop/conf and /etc/spark/conf from the master instance and store under flight/etc 
       for references. Check spark-default.conf and spark-env.sh to see how EMR does lots of plumbing work.    
       
-   Here is the result of my version of FlightSample.    
-       
+   Here is the result of my version of FlightSample. 
+          
        
       Job Id Description                       Duration Stages: Succeeded/Total	Tasks Succeeded/Total
       6 csv at FlightSample.scala:57		          10 s		        3/3 			       222/222
