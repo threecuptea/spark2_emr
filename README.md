@@ -39,7 +39,7 @@
    f) I scp files under /etc/hadoop/conf and /etc/spark/conf from the master instance and store under flight/etc 
       for references. Check spark-default.conf and spark-env.sh to see how EMR does lots of plumbing work.    
       
-   Here is the result of my version of FlightSample. 
+   Here is the result of my version of FlightSample.    
        
        
       Job Id Description                       Duration Stages: Succeeded/Total	Tasks Succeeded/Total
@@ -61,4 +61,5 @@
     var adjPartition = partitions - partitions / 3 -1  //expect at least 1/3 < 2000
     val flightDS = rawDF.filter($"year" >= 2000).select($"quarter", $"origin", $"dest", $"depdelay", $"cancelled")
                         .coalesce(adjPartition).cache() 
+   
    The performance improves a lot.  It only executes file scan once.  That's in job 1. The rest of jobs re-use cache().           
