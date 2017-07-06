@@ -65,15 +65,9 @@
    The performance improves a lot.  It only executes file scan once.  That's in job 1. The rest of jobs re-use cache(). 
    
 2. Automate the creation of EMR Spark cluster and the deployment of FlightSample with aws-cli (A big step).   
-   The sample script is as the followings:
+   The sample script is in scripts/aws_create_cluster_deploy_flight,sh)
   
-     
-     aws emr create-cluster --name "auto-1234" --release-label emr-5.6.0 --applications Name=Spark --log-uri s3://threecuptea-us-west-2/flights/auto-1234/ \
-     --ec2-attributes KeyName=emr-spark --instance-type m3.xlarge --instance-count 3 --use-default-roles \
-     --steps Type=Spark,Name="Spark Program",ActionOnFailure=CANCEL_AND_WAIT,\
-     Args=[--deploy-mode,cluster,--class,org.freemind.spark.flight.FlightSample,s3://threecuptea-us-west-2/flights/spark2_emr_2.11-1.0.jar,s3://threecuptea-us-west-2/flights/auto-1234/]
 
-  
    There are a couple of key points:
    
    a. I must specify --deploy-mode cluster since my jar file is in S3.  In contrast, my application files must be in 
