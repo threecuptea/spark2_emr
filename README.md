@@ -72,4 +72,4 @@
    
    a. I must specify --deploy-mode cluster since my jar file is in S3.  In contrast, my application files must be in 
       a local path on the EMR cluster if I want to use default deploy-mode: client.   
-   b. To help debugging, I have to specify the logging location with -log-uri           
+   b. To help debugging, I have to specify the logging location with --log-uri           
