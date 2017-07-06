@@ -41,15 +41,14 @@
       
    Here is the result of my version of FlightSample. 
           
-       
-      Job Id Description                       Duration Stages: Succeeded/Total	Tasks Succeeded/Total
-      6 csv at FlightSample.scala:57		          10 s		        3/3 			       222/222
-      5 csv at FlightSample.scala:53		           2 s		        3/3 			        222/222
-      4 csv at FlightSample.scala:48		           4 s		        3/3 			        222/222
-      3 parquet at FlightSample.scala:43	    4 s		        3/3 			        222/222
-      2 json at FlightSample.scala:38		          6 s		        3/3 		 	       222/222
-      1 csv at FlightSample.scala:33		      1.6 min		      3/3 			        222/222
-      0 parquet at FlightSample.scala:22 	   13 s		      1/1			                 1/1
+    Job Id    Description                       Duration        Stages: Succeeded/Total	        Tasks Succeeded/Total
+        6     csv at FlightSample.scala:57            10 s                3/3                         222/222
+        5     csv at FlightSample.scala:53            2 s                 3/3                         222/222
+        4     csv at FlightSample.scala:48            4 s                 3/3                         222/222
+        3     parquet at FlightSample.scala:43        4 s                 3/3                         222/222
+        2     json at FlightSample.scala:38           6 s                 3/3                         222/222
+        1     csv at FlightSample.scala:33          1.6 min                 3/3                         222/222
+        0     parquet at FlightSample.scala:22        13 s                  1/1                         1/1
       
    I made two major improvement 
    1. I cache the common set.  All output must be >= 2000 year and I only concerns of a few fields
