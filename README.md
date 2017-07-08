@@ -39,7 +39,7 @@
    f) I scp files under /etc/hadoop/conf and /etc/spark/conf from the master instance and store under flight/etc 
       for references. Check spark-default.conf and spark-env.sh to see how EMR does lots of plumbing work.    
       
-   See the fligh/job_metrics for
+   Check flight/job_metrics file for event-log job performance metrics. 
          
    I made two major improvement compared with the original FlightSample
   
@@ -49,15 +49,14 @@
    That's the following line
         
     val partitions = rawDF.rdd.getNumPartitions
-    var adjPartition = partitions - partitions / 3 - 2  //expect at least 1/3 < 2000
+    var adjPartition = partitions - partitions / 3 - 1  //expect at least 1/3 < 2000
     val flightDS = rawDF.filter($"year" >= 2000).select($"quarter", $"origin", $"dest", $"depdelay", $"cancelled")
                         .coalesce(adjPartition).cache() 
    
    The performance improves a lot.  It only executes file scan once.  That's in job 1. The rest of jobs re-use cache(). 
    
 2. Automate the creation of EMR Spark cluster and the deployment of FlightSample with aws-cli (A big step).   
-   The sample script is in scripts/aws_create_cluster_deploy_flight.sh)
-  
+   The sample script is in scripts/aws_create_cluster_deploy_flight.sh)  
 
    There are a couple of key points:
    
@@ -66,5 +65,11 @@
    b. To help debugging, I have to specify the logging location with --log-uri 
    c. I have to dynamically create working folder in s3 for each run and I use timestamp $(date+%s) to ensure
       uniqueness.
+   d. s3 does not have traditional folder concept. s3 regard bucket and folder structure as key value.  To work around 
+      to create an empty directory, I have to create an EMPTY file and use sync.  Remove a empty folder with --recursive
+        
+      
+          aws s3 sync ./flights-1499536304 s3://threecuptea-us-west-2/flights/flights-1499536304
+          aws s3 rm s3://threecuptea-us-west-2/flights/out --recursive         
            
            
