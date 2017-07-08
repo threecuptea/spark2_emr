@@ -1,7 +1,7 @@
 ### spark2_emr collects spark2 projects deployed in AWS EMR cluster.  A lot of companies deployed Spark applications on AWS EMR to take advantage its integrated environments.  The purpose is to be familiar with AWS EMR and futher migrate my spark_tutorial_2 and spark_python_16 projects to EMR.  Automate and run Spark2 applications in real world.
 #### The topics include:
 
-1. FlightSample Spark application: this is inpired by the example https://aws.amazon.com/blogs/aws/new-apache-spark-on-amazon-emr/.  
+1. MyFlightSample Spark application: this is inpired by the example https://aws.amazon.com/blogs/aws/new-apache-spark-on-amazon-emr/.  
    I successfully created spark2-EMR cluster and ran the flight sample spark application and output results to the 
    designated s3 bucket/ folder.  The take away is that
    
@@ -39,37 +39,32 @@
    f) I scp files under /etc/hadoop/conf and /etc/spark/conf from the master instance and store under flight/etc 
       for references. Check spark-default.conf and spark-env.sh to see how EMR does lots of plumbing work.    
       
-   Here is the result of my version of FlightSample. 
-          
-          
-    Job Id    Description                       Duration        Stages: Succeeded/Total	        Tasks Succeeded/Total
-        6     csv at FlightSample.scala:57            10 s                3/3                         222/222
-        5     csv at FlightSample.scala:53            2 s                 3/3                         222/222
-        4     csv at FlightSample.scala:48            4 s                 3/3                         222/222
-        3     parquet at FlightSample.scala:43        4 s                 3/3                         222/222
-        2     json at FlightSample.scala:38           6 s                 3/3                         222/222
-        1     csv at FlightSample.scala:33          1.6 min                 3/3                         222/222
-        0     parquet at FlightSample.scala:22        13 s                  1/1                         1/1
-      
-   I made two major improvement 
+   See the fligh/job_metrics for
+         
+   I made two major improvement compared with the original FlightSample
+  
    1. I cache the common set.  All output must be >= 2000 year and I only concerns of a few fields
    2. I coalesce to less partitions since we fliter out data < 2000 year. 
       
    That's the following line
         
     val partitions = rawDF.rdd.getNumPartitions
-    var adjPartition = partitions - partitions / 3 -1  //expect at least 1/3 < 2000
+    var adjPartition = partitions - partitions / 3 - 2  //expect at least 1/3 < 2000
     val flightDS = rawDF.filter($"year" >= 2000).select($"quarter", $"origin", $"dest", $"depdelay", $"cancelled")
                         .coalesce(adjPartition).cache() 
    
    The performance improves a lot.  It only executes file scan once.  That's in job 1. The rest of jobs re-use cache(). 
    
 2. Automate the creation of EMR Spark cluster and the deployment of FlightSample with aws-cli (A big step).   
-   The sample script is in scripts/aws_create_cluster_deploy_flight,sh)
+   The sample script is in scripts/aws_create_cluster_deploy_flight.sh)
   
 
    There are a couple of key points:
    
    a. I must specify --deploy-mode cluster since my jar file is in S3.  In contrast, my application files must be in 
       a local path on the EMR cluster if I want to use default deploy-mode: client.   
-   b. To help debugging, I have to specify the logging location with --log-uri           
+   b. To help debugging, I have to specify the logging location with --log-uri 
+   c. I have to dynamically create working folder in s3 for each run and I use timestamp $(date+%s) to ensure
+      uniqueness.
+           
+           

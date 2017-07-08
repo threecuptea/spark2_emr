@@ -2,4 +2,4 @@
 
 masterhost=$1
 
-ssh -i ./emr-spark.pem "hadoop@$masterhost" -y
+ssh -i [key-pair-pem-path] "hadoop@$masterhost" -y

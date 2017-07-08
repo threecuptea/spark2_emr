@@ -4,13 +4,13 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.desc
 
 /**
-  * Created by fandev on 7/3/17.
+  * Created by fandev on 7/8/17.
   */
-object FlightSample {
+object MyFlightSample {
 
   def main(args: Array[String]): Unit = {
     if (args.length != 1) {
-      println("Usage: FlightSample [s3-putput-path] ")
+      println("Usage: MyFlightSample [s3-putput-path] ")
       System.exit(-1)
     }
 
@@ -21,7 +21,7 @@ object FlightSample {
 
     val rawDF = spark.read.parquet("s3://us-east-1.elasticmapreduce.samples/flightdata/input/")
     val partitions = rawDF.rdd.getNumPartitions
-    var adjPartition = partitions - partitions / 3 -1  //expect at least 1/3 < 2000
+    var adjPartition = partitions - partitions / 3 - 1 //expect at least 1/3 < 2000
 
     //cache repeated Dataset
     val flightDS = rawDF.filter($"year" >= 2000).select($"quarter", $"origin", $"dest", $"depdelay", $"cancelled")
@@ -58,4 +58,5 @@ object FlightSample {
 
     spark.stop()
   }
+
 }
