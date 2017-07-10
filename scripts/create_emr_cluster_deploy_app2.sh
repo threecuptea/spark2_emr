@@ -4,7 +4,6 @@ declare -A APPMAP
 APPMAP['flights']='org.freemind.spark.flight.MyFlightSample'
 
 app=$1
-python_script="$2"
 id="${app}-$(date +%s)"
 bucket=threecuptea-us-west-2
 jar=spark2_emr_2.11-1.0.jar
@@ -29,4 +28,4 @@ sleep 3
 aws emr create-cluster --name $id --release-label emr-5.6.0 --applications Name=Spark --log-uri $s3_folder_path/ \
 --ec2-attributes KeyName=emr-spark --instance-type m3.xlarge --instance-count 3 --use-default-roles --auto-terminate \
 --steps Type=Spark,Name="Spark Program",ActionOnFailure=CANCEL_AND_WAIT,\
-Args=[--deploy-mode,cluster,--class,${APPMAP[$app]},$s3_jar_path,$s3_folder_path/] | $python_script
+Args=[--deploy-mode,cluster,--class,${APPMAP[$app]},$s3_jar_path,$s3_folder_path/] | python2.7 scripts/emr_adhoc.py

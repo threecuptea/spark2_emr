@@ -56,7 +56,10 @@
    The performance improves a lot.  It only executes file scan once.  That's in job 1. The rest of jobs re-use cache(). 
    
 2. Automate the creation of EMR Spark cluster and the deployment of FlightSample with aws-cli (A big step).   
-   The sample script is in scripts/aws_create_cluster_deploy_flight.sh)  
+   The sample script is in scripts/aws_create_cluster_deploy_flight.sh).  Futthermore, I enhance it to generic 
+   (scripts/create_emr_cluster_deploy_app2.sh) so that I can re-use it in recommend and other projects.  It is followed
+   by emr_adhoc.py to retrive the cluster state and download the result output when steps are completed.  This is a 
+   simple one for developer.  DevOp use other professional tool like Terraform to accomplish it.    
 
    There are a couple of key points:
    
@@ -72,7 +75,7 @@
       describe-cluster like "aws emr describe-cluster --cluster-id j-3AFOPWLHEWP9H" to get the cluster state in 
       a loop until the cluster reach one of final states.  If the cluster terminates normally, I would syn local 
       working folder with s3 one to get all log and final outputs otherwise I would retrieve the master public dns for 
-      the debug reason.
+      the debug reason.  I use python subprocess and json modules to easily achieve this.
       
       
        
