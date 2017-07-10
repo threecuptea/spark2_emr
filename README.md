@@ -61,15 +61,21 @@
    There are a couple of key points:
    
    a. I must specify --deploy-mode cluster since my jar file is in S3.  In contrast, my application files must be in 
-      a local path on the EMR cluster if I want to use default deploy-mode: client.   
-   b. To help debugging, I have to specify the logging location with --log-uri 
+      a local path on the EMR cluster if I want to use the default deploy-mode: client.   
+   b. To help debugging, I have to specify the logging location with --log-uri   
    c. I have to dynamically create working folder in s3 for each run and I use timestamp $(date+%s) to ensure
-      uniqueness.
-   d. s3 does not have traditional folder concept. s3 regard bucket and folder structure as key value.  To work around 
-      to create an empty directory, I have to create an EMPTY file and use sync.  Remove a empty folder with --recursive
-        
+      its uniqueness.     
+   d. s3 does not have traditional folder concept. s3 regards bucket and folder structure as key value.  To work around 
+      to create an empty directory in advance, I have to create an EMPTY file and use sync.  Remove a empty folder 
+      with --recursive        
+   e. I add emr_adhoc.py to retrieve ClusterId from the result json of create-cluster, then use it to query 
+      describe-cluster like "aws emr describe-cluster --cluster-id j-3AFOPWLHEWP9H" to get the cluster state in 
+      a loop until the cluster reach one of final states.  If the cluster terminates normally, I would syn local 
+      working folder with s3 one to get all log and final outputs otherwise I would retrieve the master public dns for 
+      the debug reason.
       
-          aws s3 sync ./flights-1499536304 s3://threecuptea-us-west-2/flights/flights-1499536304
-          aws s3 rm s3://threecuptea-us-west-2/flights/out --recursive         
+      
+       
            
-           
+   
+            
