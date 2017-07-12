@@ -2,6 +2,7 @@
 
 declare -A APPMAP
 APPMAP['flights']='org.freemind.spark.flight.MyFlightSample'
+APPMAP['recommend']='org.freemind.spark.recommend.MyMovieLensALS'
 
 app=$1
 id="${app}-$(date +%s)"
@@ -10,13 +11,10 @@ jar=spark2_emr_2.11-1.0.jar
 local_working=~/Downloads/emr-spark/$id
 
 s3_app_path=s3://$bucket/$app
-s3_jar_path=s3://$bucket/$app/$jar
+s3_jar_path=s3://$bucket/$jar
 s3_folder_path=s3://$bucket/$app/$id
 
-cd ~/workspace/samples/spark2_emr
-sbt package
-aws s3 cp target/scala-2.11/$jar $s3_app_path/
-
+aws s3 cp target/scala-2.11/$jar s3://$bucket/
 
 mkdir $local_working
 touch $local_working/EMPTY

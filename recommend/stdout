@@ -1,0 +1,40 @@
+Rating counts and movie rating snapshot= 1000209, 24
++------+-------+------+
+|userId|movieId|rating|
++------+-------+------+
+|1     |1193   |5.0   |
+|1     |661    |3.0   |
+|1     |914    |3.0   |
+|1     |3408   |4.0   |
+|1     |2355   |5.0   |
+|1     |1197   |3.0   |
+|1     |1287   |5.0   |
+|1     |2804   |5.0   |
+|1     |594    |4.0   |
+|1     |919    |4.0   |
++------+-------+------+
+only showing top 10 rows
+
+Movies count and its snapshot= 3883
++---+----------------------------------+--------------------------------+
+|id |title                             |genres                          |
++---+----------------------------------+--------------------------------+
+|1  |Toy Story (1995)                  |[Animation, Children's, Comedy] |
+|2  |Jumanji (1995)                    |[Adventure, Children's, Fantasy]|
+|3  |Grumpier Old Men (1995)           |[Comedy, Romance]               |
+|4  |Waiting to Exhale (1995)          |[Comedy, Drama]                 |
+|5  |Father of the Bride Part II (1995)|[Comedy]                        |
+|6  |Heat (1995)                       |[Action, Crime, Thriller]       |
+|7  |Sabrina (1995)                    |[Comedy, Romance]               |
+|8  |Tom and Huck (1995)               |[Adventure, Children's]         |
+|9  |Sudden Death (1995)               |[Action]                        |
+|10 |GoldenEye (1995)                  |[Action, Adventure, Thriller]   |
++---+----------------------------------+--------------------------------+
+only showing top 10 rows
+
+The baseline rmse =1.12The best model was trained with param = {
+	als_3f6153e60065-maxIter: 20,
+	als_3f6153e60065-rank: 12,
+	als_3f6153e60065-regParam: 0.1
+}
+The RMSE of the bestModel on test set is 0.86, which is 23.14% over baseline.
