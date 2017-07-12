@@ -77,9 +77,9 @@
       working folder with s3 one to get all log and final outputs otherwise I would retrieve the master public dns for 
       the debug reason.  I use python subprocess and json modules to easily achieve this.
       
-3. MyMovieLensAls: I migrate MovieLensALS recommendation system of spark_tutorial_2 to E
+3. MyMovieLensAls: I migrate MovieLensALS recommendation system of spark_tutorial_2 to EMR
 
-   a. MovieLensALS recommendation system is more a real-world example.
+   a. MovieLensALS recommendation system is more a real-world example.   
    b. Make sure create_emr_cluster_deploy_app2.sh can be used in multiple applications deployment and adhoc analysis.   
       I have to adjust steps of create_emr_cluster_deploy_app2.sh when I deploy pyspark applications to EMR.
        
