@@ -14,22 +14,9 @@ import org.apache.spark.sql.functions._
   *
   * @author sling(threecuptea) wrote on 7/10/17.
   */
-case class Rating(userId: Int, movieId: Int, rating: Float)
-case class Movie(id: Int, title: String, genres: String)
 
 object MyMovieLensALS {
 
-  def parseRating(line: String): Rating = {
-    val splits = line.split("::")
-    assert(splits.length == 4)
-    Rating(splits(0).toInt, splits(1).toInt, splits(2).toFloat)
-  }
-
-  def parseMovie(line: String): Movie = {
-    val splits = line.split("::")
-    assert(splits.length == 3)
-    Movie(splits(0).toInt, splits(1), splits(2))
-  }
 
   def main(args: Array[String]): Unit = {
 
@@ -65,10 +52,11 @@ object MyMovieLensALS {
 
     import spark.implicits._
 
-    val mrDS = spark.read.textFile(mrFile).map(parseRating).cache()
-    val prDS = spark.read.textFile(prFile).map(parseRating).cache()
+    val mlParser = new MovieLensParser()
+    val mrDS = spark.read.textFile(mrFile).map(mlParser.parseRating).cache()
+    val prDS = spark.read.textFile(prFile).map(mlParser.parseRating).cache()
     //I did not use movie to look up in this case, therefore, I don't use broadcast
-    val movieDS = spark.read.textFile(movieFile).map(parseMovie).cache()
+    val movieDS = spark.read.textFile(movieFile).map(mlParser.parseMovie).cache()
 
     println(s"Rating counts and movie rating snapshot= ${mrDS.count}, ${prDS.count}")
     mrDS.show(10, false)
@@ -150,10 +138,12 @@ object MyMovieLensALS {
 
     //We might have movieId in movies but not in allDS
     val unratingDS =  movieDS.filter(movie => !pMovieIds.contains(movie.id)).withColumnRenamed("id", "movieId").withColumn("userId", lit(0))
-    val recommendation = augmentModel.transform(unratingDS).filter(!$"prediction".isNaN).sort(desc("prediction")).limit(100)
+    val recommendation = augmentModel.transform(unratingDS).filter(!$"prediction".isNaN).sort(desc("prediction")).limit(25)
     //recommendation.show()
-    //java.lang.UnsupportedOperationException: CSV data source does not support array<string> data type.  I take generes as it it.
-    recommendation.write.csv(outPath + "top_100")
+    //java.lang.UnsupportedOperationException: CSV data source does not support array<string> data type.  I take genres as it it.
+    val stringify = udf((vs: Seq[String]) => s"""[${vs.mkString(",")}]""")
+
+    recommendation.withColumn("genres", stringify($"genres")).write.option("header","true").csv(outPath + "top_25")
 
   }
 

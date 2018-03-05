@@ -15,8 +15,8 @@ if __name__ == '__main__':
     describe_cluster = 'aws emr describe-cluster --cluster-id %s' % cluster_id
     describe_cluster_arr = describe_cluster.split()
     proc_describe_cluster = subprocess.Popen(describe_cluster_arr, stdout=subprocess.PIPE)
-    stdoutdata, _ = proc_describe_cluster.communicate()
-    describe_cluster_json = json.loads(stdoutdata)
+    stdindata, _ = proc_describe_cluster.communicate()
+    describe_cluster_json = json.loads(stdindata)
     state = describe_cluster_json['Cluster']['Status']['State']
     prev_state = state
     print 'Initial state: %s' % state
@@ -25,8 +25,8 @@ if __name__ == '__main__':
             break
         sleep(1)
         proc_describe_cluster = subprocess.Popen(describe_cluster_arr, stdout=subprocess.PIPE)
-        stdoutdata, _ = proc_describe_cluster.communicate()
-        describe_cluster_json = json.loads(stdoutdata)
+        stdindata, _ = proc_describe_cluster.communicate()
+        describe_cluster_json = json.loads(stdindata)
         state = describe_cluster_json['Cluster']['Status']['State']
         if state != prev_state:
             print 'Current state: %s' % state

@@ -1,0 +1,37 @@
+fandev@ubuntu:~/Downloads/emr-spark$ hadoop jar parquet-tools-1.8.2.jar cat output/top_long_delays/part-00000-be6efab7-5ecf-46a3-aa27-27c4cb6659f5-c000.snappy.parquet
+18/03/04 18:36:16 INFO hadoop.ParquetFileReader: Initiating action with parallelism: 5
+18/03/04 18:36:16 INFO hadoop.ParquetFileReader: reading another 1 footers
+18/03/04 18:36:16 INFO hadoop.ParquetFileReader: Initiating action with parallelism: 5
+18/03/04 18:36:17 INFO hadoop.InternalParquetRecordReader: RecordReader initialized will read a total of 10 records.
+18/03/04 18:36:17 INFO hadoop.InternalParquetRecordReader: at row 0. reading next block
+18/03/04 18:36:17 INFO compress.CodecPool: Got brand-new decompressor [.snappy]
+18/03/04 18:36:17 INFO hadoop.InternalParquetRecordReader: block read in memory in 146 ms. row count = 10
+origin = ORD
+total_delays = 405810
+
+origin = ATL
+total_delays = 329906
+
+origin = DFW
+total_delays = 250228
+
+origin = DEN
+total_delays = 170284
+
+origin = EWR
+total_delays = 154344
+
+origin = SFO
+total_delays = 148855
+
+origin = LAX
+total_delays = 139916
+
+origin = IAH
+total_delays = 125823
+
+origin = PHX
+total_delays = 120405
+
+origin = LAS
+total_delays = 113583

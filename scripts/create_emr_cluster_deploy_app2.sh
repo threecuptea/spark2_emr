@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 
+export AWS_DEFAULT_PROFILE=threecuptea
+
 declare -A APPMAP
 APPMAP['flights']='org.freemind.spark.flight.MyFlightSample'
 APPMAP['recommend']='org.freemind.spark.recommend.MyMovieLensALS'
+APPMAP['recommendcv']='org.freemind.spark.recommend.MovieLensALSColdStartCvEmr'
 
 app=$1
 id="${app}-$(date +%s)"
@@ -17,13 +20,8 @@ s3_folder_path=s3://$bucket/$app/$id
 aws s3 cp target/scala-2.11/$jar s3://$bucket/
 
 mkdir $local_working
-touch $local_working/EMPTY
 
-aws s3 sync $local_working $s3_folder_path
-
-sleep 3
-
-aws emr create-cluster --name $id --release-label emr-5.6.0 --applications Name=Spark --log-uri $s3_folder_path/ \
---ec2-attributes KeyName=emr-spark --instance-type m3.xlarge --instance-count 3 --use-default-roles --auto-terminate \
+aws emr create-cluster --name $id --release-label emr-5.12.0 --applications Name=Spark --log-uri $s3_folder_path/ \
+--ec2-attributes KeyName=emr-spark --instance-type m3.xlarge --instance-count 3 --use-default-roles  \
 --steps Type=Spark,Name="Spark Program",ActionOnFailure=CANCEL_AND_WAIT,\
 Args=[--deploy-mode,cluster,--class,${APPMAP[$app]},$s3_jar_path,$s3_folder_path/] | python2.7 scripts/emr_adhoc.py

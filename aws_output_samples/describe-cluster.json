@@ -1,0 +1,110 @@
+{
+  "Cluster": {
+    "Configurations": [
+
+    ],
+    "InstanceGroups": [
+      {
+        "InstanceGroupType": "MASTER",
+        "Status": {
+          "Timeline": {
+            "CreationDateTime": 1519857813.458,
+            "EndDateTime": 1519858521.312,
+            "ReadyDateTime": 1519858143.924
+          },
+          "State": "TERMINATED",
+          "StateChangeReason": {
+            "Code": "CLUSTER_TERMINATED",
+            "Message": "Job flow terminated"
+          }
+        },
+        "Name": "MASTER",
+        "RequestedInstanceCount": 1,
+        "ShrinkPolicy": {
+
+        },
+        "RunningInstanceCount": 0,
+        "Id": "ig-1WW4LN4WLRUVH",
+        "Market": "ON_DEMAND",
+        "EbsBlockDevices": [
+
+        ],
+        "InstanceType": "m3.xlarge",
+        "Configurations": [
+
+        ]
+      },
+      {
+        "InstanceGroupType": "CORE",
+        "Status": {
+          "Timeline": {
+            "CreationDateTime": 1519857813.458,
+            "EndDateTime": 1519858521.312,
+            "ReadyDateTime": 1519858181.175
+          },
+          "State": "TERMINATED",
+          "StateChangeReason": {
+            "Code": "CLUSTER_TERMINATED",
+            "Message": "Job flow terminated"
+          }
+        },
+        "Name": "CORE",
+        "RequestedInstanceCount": 2,
+        "ShrinkPolicy": {
+
+        },
+        "RunningInstanceCount": 0,
+        "Id": "ig-1PQZU7XTRD4JB",
+        "Market": "ON_DEMAND",
+        "EbsBlockDevices": [
+
+        ],
+        "InstanceType": "m3.xlarge",
+        "Configurations": [
+
+        ]
+      }
+    ],
+    "AutoTerminate": true,
+    "VisibleToAllUsers": true,
+    "ServiceRole": "EMR_DefaultRole",
+    "Id": "j-1ZOF1GB8NTXSG",
+    "LogUri": "s3n://threecuptea-us-west-2/flights/flights-1519857802/",
+    "Ec2InstanceAttributes": {
+      "EmrManagedSlaveSecurityGroup": "sg-382db70b",
+      "Ec2KeyName": "emr-spark",
+      "IamInstanceProfile": "EMR_EC2_DefaultRole",
+      "Ec2AvailabilityZone": "us-west-2a",
+      "EmrManagedMasterSecurityGroup": "sg-3f2db70c"
+    },
+    "Tags": [
+
+    ],
+    "MasterPublicDnsName": "ec2-54-189-190-88.us-west-2.compute.amazonaws.com",
+    "ReleaseLabel": "emr-5.12.0",
+    "NormalizedInstanceHours": 24,
+    "BootstrapActions": [
+
+    ],
+    "Name": "flights-1519857802",
+    "Status": {
+      "Timeline": {
+        "CreationDateTime": 1519857813.456,
+        "EndDateTime": 1519858522.68,
+        "ReadyDateTime": 1519858181.114
+      },
+      "State": "TERMINATED",
+      "StateChangeReason": {
+        "Code": "ALL_STEPS_COMPLETED",
+        "Message": "Steps completed"
+      }
+    },
+    "TerminationProtected": false,
+    "Applications": [
+      {
+        "Name": "Spark",
+        "Version": "2.2.1"
+      }
+    ]
+  }
+}
