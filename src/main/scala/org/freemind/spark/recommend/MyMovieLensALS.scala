@@ -17,6 +17,12 @@ import org.apache.spark.sql.functions._
 
 object MyMovieLensALS {
 
+  val S3RecommendBase = "s3://threecuptea-us-west-2/recommend/ml-1m"
+
+  val mrFile = s"${S3RecommendBase}/ratings.dat.gz"
+  val prFile = s"${S3RecommendBase}/personalRatings.txt"
+  val movieFile = s"${S3RecommendBase}/movies.dat"
+
 
   def main(args: Array[String]): Unit = {
 
@@ -38,11 +44,6 @@ object MyMovieLensALS {
     }
 
     val outPath = args(0)
-
-    val mrFile = "s3://threecuptea-us-west-2/recommend/ml-1m/ratings.dat.gz"
-    val prFile = "s3://threecuptea-us-west-2/recommend/ml-1m/personalRatings.txt"
-    val movieFile = "s3://threecuptea-us-west-2/recommend/ml-1m/movies.dat"
-
 
     val spark = SparkSession
       .builder()
@@ -139,12 +140,14 @@ object MyMovieLensALS {
     //We might have movieId in movies but not in allDS
     val unratingDS =  movieDS.filter(movie => !pMovieIds.contains(movie.id)).withColumnRenamed("id", "movieId").withColumn("userId", lit(0))
     val recommendation = augmentModel.transform(unratingDS).filter(!$"prediction".isNaN).sort(desc("prediction")).limit(25)
+    recommendation.show(25, false)
     //recommendation.show()
     //java.lang.UnsupportedOperationException: CSV data source does not support array<string> data type.  I take genres as it it.
     val stringify = udf((vs: Seq[String]) => s"""[${vs.mkString(",")}]""")
 
     recommendation.withColumn("genres", stringify($"genres")).write.option("header","true").csv(outPath + "top_25")
 
+    spark.stop()
   }
 
 }

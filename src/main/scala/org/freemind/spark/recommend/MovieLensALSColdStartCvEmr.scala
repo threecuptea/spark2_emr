@@ -22,7 +22,14 @@ object MovieLensALSColdStartCvEmr {
     }
     val outPath = args(0)
 
-    val spark = SparkSession.builder().appName("MovieLensALSColdStartCv").getOrCreate()
+    val spark = SparkSession.builder().appName("MovieLensALSColdStartCv").
+      config("spark.sql.shuffle.partitions", 8).
+      config("spark.executor.cores", 5).
+    //  config("spark.default.parallelism", 64).
+    //  config("spark.driver.memory", "1g").
+    //  config("spark.executor.memory", "4g").
+    //  config("spark.executor.instances", 4).
+      getOrCreate()
     import spark.implicits._
 
     val mlParser = new MovieLensParser()
@@ -70,6 +77,7 @@ object MovieLensALSColdStartCvEmr {
 
     bestModelFromCR.save(outPath + "cv-model") // It is using MLWriter
 
+    spark.stop()
   }
 
   def getBestCrossValidatorModel(cv: CrossValidator,
