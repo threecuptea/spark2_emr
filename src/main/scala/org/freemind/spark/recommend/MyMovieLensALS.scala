@@ -81,7 +81,7 @@ object MyMovieLensALS {
     /**
       * ALS model and Grid search
       */
-    val als = new ALS().setUserCol("userId").setItemCol("movieId").setRatingCol("rating")
+    val als = new ALS().setColdStartStrategy("drop").setUserCol("userId").setItemCol("movieId").setRatingCol("rating")
     var bestRmse = Double.MaxValue
     var bestModel: Option[ALSModel] = None
     var bestParam: Option[ParamMap] = None
@@ -106,7 +106,7 @@ object MyMovieLensALS {
       //def filter(func: (T) ⇒ Boolean): Dataset[T] for the followings
       //val prediction = model.transform(valDS).filter(r => !r.getAs[Float]("prediction").isNaN)
       //def filter(condition: Column): Dataset[T], for the following
-      val prediction = model.transform(valDS).filter(!$"prediction".isNaN)// Need to exclude NaN from prediction, otherwise rmse will be NaN too
+      val prediction = model.transform(valDS)// Need to exclude NaN from prediction, otherwise rmse will be NaN too
       //NaN is the least
       val rmse = evaluator.evaluate(prediction)
 
@@ -133,19 +133,24 @@ object MyMovieLensALS {
     //If I use allDS to fit then distinct movieId  of mr - moveId of PR to transform, allDS will cover the scope. I don't need
     //to filter out isNaN.  However, that would require distinct then join.  Both requires shuffling.
     val augmentModel = als.fit(allDS, bestParam.get)
-    //option 1
-    //val pMovieIds = prDS.select($"movieId").map(r => r.getInt(0)).collect()
-    val pMovieIds = prDS.map(_.movieId).collect()  //option 2 is faster
 
-    //We might have movieId in movies but not in allDS
-    val unratingDS =  movieDS.filter(movie => !pMovieIds.contains(movie.id)).withColumnRenamed("id", "movieId").withColumn("userId", lit(0))
-    val recommendation = augmentModel.transform(unratingDS).filter(!$"prediction".isNaN).sort(desc("prediction")).limit(25)
+    val ratedDS = movieDS.join(prDS, movieDS("id") === prDS("movieId")).as[Movie] //Dataset of Movie
+    val unratedDS = movieDS.except(ratedDS).withColumnRenamed("id", "movieId").withColumn("userId", lit(0)) //Dataset of Movie
+
+    val recommendation = augmentModel.transform(unratedDS).sort(desc("prediction")).limit(25)
     recommendation.show(25, false)
-    //recommendation.show()
+
     //java.lang.UnsupportedOperationException: CSV data source does not support array<string> data type.  I take genres as it it.
     val stringify = udf((vs: Seq[String]) => s"""[${vs.mkString(",")}]""")
 
     recommendation.withColumn("genres", stringify($"genres")).write.option("header","true").csv(outPath + "top_25")
+    //recommend is a Row
+    val sUserId = 6001
+    val recommendDS = augmentModel.recommendForAllUsers(10).select($"userId", explode($"recommendations").as("recommend")).
+      select($"userId", $"recommend".getField("movieId").as("movieId"), $"recommend".getField("rating").as("rating"))
+
+    recommendDS.join(movieDS, recommendDS("movieId") === movieDS("id")).
+      select($"movieId", $"title", $"genres", $"userId", $"rating").show(false)
 
     spark.stop()
   }

@@ -82,7 +82,27 @@
    a. MovieLensALS recommendation system is more a real-world example.   
    b. Make sure create_emr_cluster_deploy_app2.sh can be used in multiple applications deployment and adhoc analysis.   
       I have to adjust steps of create_emr_cluster_deploy_app2.sh when I deploy pyspark applications to EMR.
-       
-           
+   c. The result of join is a DataFrame to convert back to type by using as[T] like and also get (A - B) Dataset, we 
+      can use except directly rather than drop to rdd then subtract  
    
-            
+        val ratedDS = movieDS.join(prDS, movieDS("id") === prDS("movieId")).as[Movie]
+        movieDS.except(prDS).withColumnRenamed("id", "movieId").withColumn("userId", lit(0))  
+   
+   d. CSV data source does not support array<string> data type.  I have to use udf
+   
+        val stringify = udf(vs: Seq[String] => s"""[${vs.mkString(",")}]""")     
+      
+   f. How to de-duplicate Dataset records     
+           
+        ds.distinct()
+        df.dropDuplicates(col1: String, cols: String*)
+        df.dropDuplicates(cols: Array[String])
+        df.dropDuplicates(cols: Seq[String])
+           
+   e. How to generate unique Id, monotonically_increasing_id() is one of sql functions.  It is incremental but
+      not continuous
+      
+        df.withColumn(""uniqueId", monotonically_increasing_id()) 
+        val inputRows = df.rdd.zipWithUniqueId.map{
+           case (r: Row, id: Long) => Row.fromSeq(id +: r.toSeq)}
+        spark.createDataFrame(inputRows, StructType(StructField("id", LongType, false) +: df.schema.fields))           
