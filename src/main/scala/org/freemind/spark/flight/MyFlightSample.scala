@@ -30,31 +30,31 @@ object MyFlightSample {
     /** top departure by origin */
     val topDepartures = flightDS.groupBy($"origin").count().withColumnRenamed("count", "total_departures")
       .sort(desc("total_departures")).limit(10)
-    topDepartures.write.csv(outPath + "top_departures")
+    topDepartures.write.csv(s"${outPath}/top_departures")
 
     /** top short delay by origin */
     val shortDepDelay = flightDS.filter($"depdelay" >= 15).groupBy($"origin").count().withColumnRenamed("count", "total_delays")
       .sort(desc("total_delays")).limit(10)
-    shortDepDelay.write.json(outPath + "top_short_delays")
+    shortDepDelay.write.json(s"${outPath}/top_short_delays")
 
     /** top long delay by origin */
     val longDepDelay = flightDS.filter($"depdelay" >= 60).groupBy($"origin").count().withColumnRenamed("count", "total_delays")
       .sort(desc("total_delays")).limit(10)
-    longDepDelay.write.parquet(outPath + "top_long_delays")
+    longDepDelay.write.parquet(s"${outPath}/top_long_delays")
 
     /** top cancellation by origin */
     val topCancel = flightDS.filter($"cancelled" === 1).groupBy($"origin").count().withColumnRenamed("count", "total_cancellations")
       .sort(desc("total_cancellations")).limit(10)
-    topCancel.write.csv(outPath + "top_cancellations")
+    topCancel.write.csv(s"${outPath}/top_cancellations")
 
     /** top cancellation by quarter */
     val quarterCancel = flightDS.filter($"cancelled" === 1).groupBy($"quarter").count().withColumnRenamed("count", "total_cancellations")
       .sort(desc("total_cancellations")).limit(10)
-    quarterCancel.write.csv(outPath + "rank_quarter_cancellations")
+    quarterCancel.write.csv(s"${outPath}/rank_quarter_cancellations")
 
     val popularFlights = flightDS.groupBy($"origin", $"dest").count().withColumnRenamed("count", "total_flights")
       .sort(desc("total_flights")).limit(10)
-    popularFlights.write.csv(outPath + "popular_flights")
+    popularFlights.write.csv(s"${outPath}/popular_flights")
 
     spark.stop()
   }
