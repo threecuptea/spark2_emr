@@ -4,27 +4,44 @@ import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.recommendation.{ALS, ALSModel}
 import org.apache.spark.ml.tuning.{CrossValidator, CrossValidatorModel, ParamGridBuilder}
-import org.apache.spark.sql.{Dataset, SparkSession}
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types._
+import org.apache.spark.storage.StorageLevel
 
 
 case class Rating(userId: Int, movieId: Int, rating: Float)
 case class Movie(id: Int, title: String, genres: Array[String])
 
-class MovieLensCommon extends Serializable {
+class MovieLensCommon(spark: SparkSession) extends Serializable {
 
-  def parseRating(line: String): Rating = {
-    val splits  = line.split("::")
-    assert(splits.length == 4)
+  import spark.implicits._
 
-    Rating(splits(0).toInt, splits(1).toInt, splits(2).toFloat)
-  }
+  val S3RecommendBase = "s3://threecuptea-us-west-2/ml-latest"
 
-  def parseMovie(line: String): Movie = {
-    val splits  = line.split("::")
-    assert(splits.length == 3)
+  val mrFile = s"${S3RecommendBase}/ratings.csv.gz"
+  val prFile = s"${S3RecommendBase}/personalRatings.csv"
+  val movieFile = s"${S3RecommendBase}/movies.csv"
 
-    Movie(splits(0).toInt, splits(1), splits(2).split('|'))
+  val ratingsSchema = StructType(
+    StructField("userId", IntegerType, nullable = true) ::
+      StructField("movieId", IntegerType, nullable = true) ::
+      StructField("rating", FloatType, nullable = true) ::
+      StructField("ts", LongType, nullable = true) :: Nil
+  )
+
+  val movieSchema = StructType(
+    StructField("id", IntegerType, nullable = true) ::
+      StructField("title", StringType, nullable = true) ::
+      StructField("genres", StringType, nullable = true) :: Nil
+  )
+
+  def getMovieLensDataFrames() = {
+    val mrDS = spark.read.option("header", true).schema(ratingsSchema).csv(mrFile).select('userId, 'movieId, 'rating).persist(StorageLevel.MEMORY_ONLY_SER)
+    val prDS = spark.read.schema(ratingsSchema).csv(prFile).select('userId, 'movieId, 'rating).cache()
+    val movieDS = spark.read.option("header", true).schema(movieSchema).option("quote","\"").option("escape","\"").csv(movieFile).persist(StorageLevel.MEMORY_ONLY_SER)
+
+    (mrDS, prDS, movieDS)
   }
 
   val evaluator = new RegressionEvaluator().setMetricName("rmse").setLabelCol("rating").setPredictionCol("prediction")
@@ -39,18 +56,18 @@ class MovieLensCommon extends Serializable {
       build()
   }
 
-  def getBaselineRmse(trainDS: Dataset[Rating], testDS: Dataset[Rating]): Double = {
+  def getBaselineRmse(trainDS: DataFrame, testDS: DataFrame): Double = {
     val avgRating = trainDS.select(mean("rating")).first().getDouble(0)
     val rmse = evaluator.evaluate(testDS.withColumn("prediction", lit(avgRating)))
     printf("The baseline rmse= %3.2f.\n", rmse)
     rmse
   }
 
-  def getBestParmMapFromALS(als: ALS, mrDS: Dataset[Rating]): ParamMap = {
+  def getBestParmMapFromALS(als: ALS, mrDS: DataFrame): ParamMap = {
     val Array(trainDS, valDS, testDS) = mrDS.randomSplit(Array(0.8, 0.1, 0.1))
-    trainDS.cache()
-    valDS.cache()
-    testDS.cache()
+    trainDS.persist(StorageLevel.MEMORY_ONLY_SER)
+    valDS.persist(StorageLevel.MEMORY_ONLY_SER)
+    testDS.persist(StorageLevel.MEMORY_ONLY_SER)
 
     var bestModel: Option[ALSModel] = None
     var bestParam: Option[ParamMap] = None
@@ -84,7 +101,7 @@ class MovieLensCommon extends Serializable {
     }
   }
 
-  def getBestCrossValidatorModel(als: ALS, mrDS: Dataset[Rating]): CrossValidatorModel = {
+  def getBestCrossValidatorModel(als: ALS, mrDS: DataFrame): CrossValidatorModel = {
     val Array(trainDS, valDS, testDS) = mrDS.randomSplit(Array(0.8, 0.1, 0.1))
     trainDS.cache()
     valDS.cache()

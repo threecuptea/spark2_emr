@@ -36,7 +36,7 @@
    d) EMR configure hadoop and spark similarly to cloudera.   The applications are in /usr/lib/hadoop, /usr/lib/spark, 
       /usr/lib/hive and configure files are in /etc/hadoop/conf and /etc/spark/conf.  EMR keep all default ports of 
       apache hadoop and apache spark.      
-   f) I scp files under /etc/hadoop/conf and /etc/spark/conf from the master instance and store under flight/etc 
+   f) I scp files under /etc/hadoop/conf and /etc/spark/conf from the master instance and store under configure
       for references. Check spark-default.conf and spark-env.sh to see how EMR does lots of plumbing work.    
       
    Check flight/job_metrics file for event-log job performance metrics. 
@@ -48,6 +48,7 @@
       
    That's the following line
         
+        
     val partitions = rawDF.rdd.getNumPartitions
     var adjPartition = partitions - partitions / 3 - 1  //expect at least 1/3 < 2000
     val flightDS = rawDF.filter($"year" >= 2000).select($"quarter", $"origin", $"dest", $"depdelay", $"cancelled")
@@ -57,7 +58,7 @@
    
 2. Automate the creation of EMR Spark cluster and the deployment of FlightSample with aws-cli (A big step).   
    The sample script is in scripts/aws_create_cluster_deploy_flight.sh).  Futthermore, I enhance it to generic 
-   (scripts/create_emr_cluster_deploy_app2.sh) so that I can re-use it in recommend and other projects.  It is followed
+   (scripts/create_emr_cluster_deploy_app_tuning2.sh) so that I can re-use it in recommend and other projects.  It is followed
    by emr_adhoc.py to retrive the cluster state and download the result output when steps are completed.  This is a 
    simple one for developer.  DevOp use other professional tool like Terraform to accomplish it.    
 
@@ -67,11 +68,8 @@
       a local path on the EMR cluster if I want to use the default deploy-mode: client.   
    b. To help debugging, I have to specify the logging location with --log-uri   
    c. I have to dynamically create working folder in s3 for each run and I use timestamp $(date+%s) to ensure
-      its uniqueness.     
-   d. s3 does not have traditional folder concept. s3 regards bucket and folder structure as key value.  To work around 
-      to create an empty directory in advance, I have to create an EMPTY file and use sync.  Remove a empty folder 
-      with --recursive        
-   e. I add emr_adhoc.py to retrieve ClusterId from the result json of create-cluster, then use it to query 
+      its uniqueness.       
+   d. I add emr_adhoc.py to retrieve ClusterId from the result json of create-cluster, then use it to query 
       describe-cluster like "aws emr describe-cluster --cluster-id j-3AFOPWLHEWP9H" to get the cluster state in 
       a loop until the cluster reach one of final states.  If the cluster terminates normally, I would syn local 
       working folder with s3 one to get all log and final outputs otherwise I would retrieve the master public dns for 
@@ -85,8 +83,8 @@
    c. The result of join is a DataFrame to convert back to type by using as[T] like and also get (A - B) Dataset, we 
       can use except directly rather than drop to rdd then subtract  
    
-        val ratedDS = movieDS.join(prDS, movieDS("id") === prDS("movieId")).as[Movie]
-        movieDS.except(prDS).withColumnRenamed("id", "movieId").withColumn("userId", lit(0))  
+        val pRatedDS = prDS.join(movieDS, prDS("movieId") === movieDS("id"), "inner").select($"id", $"title", $"genres").as[Movie]
+        val pUnratedDS = movieDS.except(pRatedDS).withColumnRenamed("id", "movieId").withColumn("userId", lit(pUserId)) //matches with ALS required fields
    
    d. CSV data source does not support array<string> data type.  I have to use udf
    

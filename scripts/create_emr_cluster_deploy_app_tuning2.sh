@@ -25,6 +25,6 @@ aws s3 cp target/scala-2.11/$jar s3://$bucket/
 mkdir $local_working
 
 aws emr create-cluster --name $id --release-label emr-5.13.0 --applications Name=Spark --log-uri $s3_folder_path/ \
---ec2-attributes KeyName=emr-spark --instance-type m3.xlarge --instance-count 3 --use-default-roles \
+--ec2-attributes KeyName=emr-spark --instance-type m3.xlarge --instance-count 4 --use-default-roles \
 --configurations file://tuning.json --steps Type=Spark,Name="Spark Program",ActionOnFailure=CANCEL_AND_WAIT,\
-Args=[--deploy-mode,cluster,--conf,spark.sql.shuffle.partitions=8,--class,${APPMAP[$app]},$s3_jar_path,$s3_folder_path] | python2.7 scripts/emr_adhoc.py
+Args=[--deploy-mode,cluster,--name,als-m3xlarge-3-2-5-40,--num-executors,2,--executor-cores,5,--executor-memory,9g,--conf,spark.sql.shuffle.partitions=40,--conf,spark.default.parallelism=40,--class,${APPMAP[$app]},$s3_jar_path,$s3_folder_path] | python2.7 scripts/emr_adhoc.py

@@ -12,11 +12,6 @@ import org.apache.spark.sql.functions.explode
   * @author sling/ threecuptea rewrite, consolidate common methods into MovieLensCommon and clean-up 05/27/2018
   */
 object MovieLensALSCvEmr {
-  val S3RecommendBase = "s3://threecuptea-us-west-2/recommend/ml-1m"
-
-  val mrFile = s"${S3RecommendBase}/ratings.dat.gz"
-  val prFile = s"${S3RecommendBase}/personalRatings.txt"
-  val movieFile = s"${S3RecommendBase}/movies.dat"
 
   def main(args: Array[String]): Unit = {
     if (args.length != 1) {
@@ -29,16 +24,12 @@ object MovieLensALSCvEmr {
     val prFile = args(1)
     val movieFile = args(2)
 
-    val spark = SparkSession.builder().appName("MovieLensALSColdStartCv").config("spark.sql.shuffle.partitions", 8).
-      //config("spark.sql.crossJoin.enabled", "true")
-      getOrCreate()
+    val spark = SparkSession.builder().config("spark.serializer", "org.apache.spark.serializer.KryoSerializer").getOrCreate()
     import spark.implicits._
 
-    val mlCommon = new MovieLensCommon
+    val mlCommon = new MovieLensCommon(spark)
 
-    val mrDS = spark.read.textFile(mrFile).map(mlCommon.parseRating).cache()
-    val prDS = spark.read.textFile(prFile).map(mlCommon.parseRating).cache()
-    val movieDS = spark.read.textFile(movieFile).map(mlCommon.parseMovie).cache()
+    val (mrDS, prDS, movieDS) = mlCommon.getMovieLensDataFrames()
 
     mrDS.show(10, false)
     println(s"Rating Counts: movie - ${mrDS.count}, personal - ${prDS.count}")

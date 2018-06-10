@@ -4,11 +4,5 @@
     "Properties": {
         "yarn.nodemanager.vmem-check-enabled": "false"
     }
-  },
-  {
-    "Classification": "spark",
-    "Properties": {
-      "maximizeResourceAllocation": "true"
-    }
   }
 ]
