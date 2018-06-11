@@ -3,6 +3,7 @@ package org.freemind.spark.recommend
 import org.apache.spark.ml.recommendation.ALS
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.{desc, explode, lit}
+import org.apache.spark.storage.StorageLevel
 
 
 /**
@@ -43,48 +44,26 @@ object MovieLensALSEmr {
 
     val mlCommon = new MovieLensCommon(spark)
 
-    val (mrDS, prDS, movieDS) = mlCommon.getMovieLensDataFrames()
+    val (mrDS, movieDS) = mlCommon.getMovieLensDataFrames()
 
+    println(s"Rating Counts: ${mrDS.count}")
     mrDS.show(10, false)
-    println(s"Rating Counts: movie - ${mrDS.count}, personal - ${prDS.count}")
-    movieDS.show(10, false)
     println(s"Movie Counts: ${movieDS.count}")
-    println()
-
-    val allDS = mrDS.union(prDS)
+    movieDS.show(10, false)
 
     //Need to match field names of rating, KEY POINT is coldStartStrategy = "drop": drop lines with 'prediction' = 'NaN'
     val als = new ALS().setMaxIter(20).setUserCol("userId").setItemCol("movieId").setRatingCol("rating").setColdStartStrategy("drop")
 
     val bestParmsFromALS = (mlCommon.getBestParmMapFromALS(als, mrDS))
     println(s"The best model from ALS was trained with param = ${bestParmsFromALS}")
-    val augModelFromALS = als.fit(allDS, bestParmsFromALS)
-
-    val pUserId = 0
-    val pRatedDS = prDS.join(movieDS, prDS("movieId") === movieDS("id"), "inner").select($"id", $"title", $"genres")
-    val pUnratedDS = movieDS.except(pRatedDS).withColumnRenamed("id", "movieId").withColumn("userId", lit(pUserId)) //matches with ALS required fields
-
-    println(s"The recommendation on unratedMovie for user=${pUserId} from ALS model")
-    augModelFromALS.transform(pUnratedDS).sort(desc("prediction")).show(false)
+    val augModelFromALS = als.fit(mrDS, bestParmsFromALS)
 
     ///recommendation: org.apache.spark.sql.Dataset[org.apache.spark.sql.Row] = [userId: int, recommendations: array<struct<movieId:int,rating:float>>]
     //We explode to flat array then retrieve field from a struct
     val recommendDS = augModelFromALS.recommendForAllUsers(25).
       select($"userId", explode($"recommendations").as("recommend")).
-      select($"userId", $"recommend".getField("movieId").as("movieId"), $"recommend".getField("rating").as("rating")).cache()
+      select($"userId", $"recommend".getField("movieId").as("movieId"), $"recommend".getField("rating").as("rating")).persist(StorageLevel.MEMORY_ONLY_SER)
 
-    val pUserRecommendDS = recommendDS.filter($"userId" === pUserId)
-
-    println(s"The top recommendation on AllUsers filter with user=${pUserId} from ALS model and exclude rated movies")
-    //Rename so that I can avoid the error that reference 'userId' is ambiguous, ' shorthand for column.
-    //"movie_b" is not part of prDS.  Therefore, you cannot use psDS("movieId_b") to reference it.  However,
-    //you can directly reference "movieId_b"
-    val pUserRatedRecommendDS = pUserRecommendDS.join(prDS.select('movieId),
-      Seq("movieId"), "inner").select('userId, 'movieId, 'rating)
-    pUserRecommendDS.except(pUserRatedRecommendDS).join(movieDS, 'movieId ==='id, "inner").
-      select($"movieId", $"title", $"genres", $"userId", $"rating").sort(desc("rating")).show(false)
-
-    println()
     val sUserId = 6001
     val sRatedDS = mrDS.filter($"userId" === sUserId).join(movieDS, mrDS("movieId") === movieDS("id"), "inner").select($"id", $"title", $"genres")
     val sUnratedDS = movieDS.except(sRatedDS).withColumnRenamed("id", "movieId").withColumn("userId", lit(sUserId))

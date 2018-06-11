@@ -20,7 +20,6 @@ class MovieLensCommon(spark: SparkSession) extends Serializable {
   val S3RecommendBase = "s3://threecuptea-us-west-2/ml-latest"
 
   val mrFile = s"${S3RecommendBase}/ratings.csv.gz"
-  val prFile = s"${S3RecommendBase}/personalRatings.csv"
   val movieFile = s"${S3RecommendBase}/movies.csv"
 
   val ratingsSchema = StructType(
@@ -38,10 +37,9 @@ class MovieLensCommon(spark: SparkSession) extends Serializable {
 
   def getMovieLensDataFrames() = {
     val mrDS = spark.read.option("header", true).schema(ratingsSchema).csv(mrFile).select('userId, 'movieId, 'rating).persist(StorageLevel.MEMORY_ONLY_SER)
-    val prDS = spark.read.schema(ratingsSchema).csv(prFile).select('userId, 'movieId, 'rating).cache()
     val movieDS = spark.read.option("header", true).schema(movieSchema).option("quote","\"").option("escape","\"").csv(movieFile).persist(StorageLevel.MEMORY_ONLY_SER)
 
-    (mrDS, prDS, movieDS)
+    (mrDS, movieDS)
   }
 
   val evaluator = new RegressionEvaluator().setMetricName("rmse").setLabelCol("rating").setPredictionCol("prediction")
@@ -103,11 +101,11 @@ class MovieLensCommon(spark: SparkSession) extends Serializable {
 
   def getBestCrossValidatorModel(als: ALS, mrDS: DataFrame): CrossValidatorModel = {
     val Array(trainDS, valDS, testDS) = mrDS.randomSplit(Array(0.8, 0.1, 0.1))
-    trainDS.cache()
-    valDS.cache()
-    testDS.cache()
+    trainDS.persist(StorageLevel.MEMORY_ONLY_SER)
+    valDS.persist(StorageLevel.MEMORY_ONLY_SER)
+    testDS.persist(StorageLevel.MEMORY_ONLY_SER)
 
-    val cv = new CrossValidator().setEstimator(als).setEstimatorParamMaps(getParamGrid(als)).setEvaluator(evaluator).setNumFolds(10)
+    val cv = new CrossValidator().setEstimator(als).setEstimatorParamMaps(getParamGrid(als)).setEvaluator(evaluator).setNumFolds(5)
     val cvModel = cv.fit(trainDS)
     val prediction = cvModel.transform(valDS)
     val bestRmse = cv.getEvaluator.evaluate(prediction)
