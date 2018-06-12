@@ -102,5 +102,5 @@
       
         df.withColumn(""uniqueId", monotonically_increasing_id()) 
         val inputRows = df.rdd.zipWithUniqueId.map{
-           case (r: Row, id: Long) => Row.fromSeq(id +: r.toSeq)}
+           case (r: Row, id: Long) => Row.fromSeq(id +: r.toSeq)}esc
         spark.createDataFrame(inputRows, StructType(StructField("id", LongType, false) +: df.schema.fields))           

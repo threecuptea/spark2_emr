@@ -10,17 +10,14 @@ import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 
 
-case class Rating(userId: Int, movieId: Int, rating: Float)
-case class Movie(id: Int, title: String, genres: Array[String])
-
 class MovieLensCommon(spark: SparkSession) extends Serializable {
 
   import spark.implicits._
 
   val S3RecommendBase = "s3://threecuptea-us-west-2/ml-latest"
 
-  val mrFile = s"${S3RecommendBase}/ratings.csv.gz"
-  val movieFile = s"${S3RecommendBase}/movies.csv"
+  val s3MrFile = s"${S3RecommendBase}/ratings.csv.gz"
+  val s3MovieFile = s"${S3RecommendBase}/movies.csv"
 
   val ratingsSchema = StructType(
     StructField("userId", IntegerType, nullable = true) ::
@@ -35,7 +32,7 @@ class MovieLensCommon(spark: SparkSession) extends Serializable {
       StructField("genres", StringType, nullable = true) :: Nil
   )
 
-  def getMovieLensDataFrames() = {
+  def getMovieLensDataFrames(mrFile: String = s3MrFile, movieFile: String = s3MovieFile ) = {
     val mrDS = spark.read.option("header", true).schema(ratingsSchema).csv(mrFile).select('userId, 'movieId, 'rating).persist(StorageLevel.MEMORY_ONLY_SER)
     val movieDS = spark.read.option("header", true).schema(movieSchema).option("quote","\"").option("escape","\"").csv(movieFile).persist(StorageLevel.MEMORY_ONLY_SER)
 
