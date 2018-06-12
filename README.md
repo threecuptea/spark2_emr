@@ -75,29 +75,103 @@
       working folder with s3 one to get all log and final outputs otherwise I would retrieve the master public dns for 
       the debug reason.  I use python subprocess and json modules to easily achieve this.
       
-3. MyMovieLensAls: I migrate MovieLensALS recommendation system of spark_tutorial_2 to EMR
+3. I finally pushed MovieLensALS and MovieLensALSCv with largest Datset to EMR with manual tuning (
+not allocateMaximumResource) and was able to finish MovieLensALS in 15 minutes (shown in AWS console) without any 
+failed tasks or failed attempt. The specs and process are as the followings
 
-   a. MovieLensALS recommendation system is more a real-world example.   
-   b. Make sure create_emr_cluster_deploy_app2.sh can be used in multiple applications deployment and adhoc analysis.   
-      I have to adjust steps of create_emr_cluster_deploy_app2.sh when I deploy pyspark applications to EMR.
-   c. The result of join is a DataFrame to convert back to type by using as[T] like and also get (A - B) Dataset, we 
-      can use except directly rather than drop to rdd then subtract  
+   a.  I used ml-latest.zip in https://grouplens.org/datasets/movielens/.  That has more than 26 million of records
+       total size is more than 1.09GB
+             
+   b.  MovieLensALS application is reading both rating and movie data set.  Split rating into training, validation 
+       and test data set. Apply ALS process: fit training set, ransform validation data set and calculate rmse 
+       using param grid of 6 (3 reg-param x 2 latent factor) to find the best parameters and model.
+       This means 6 full ALS cycles and each cycle running maxIter 20.  I apply the result to test data set to make sure
+       the best model is not over-fitting or under-fitting.  Then I refit the best paramters to full rating set.       
+       I called the result augmented model.  Then I used two approaches to get recommendation for a test userId=6001.
+       Both require join partial rating and movie partially.  Then I stored recommendForAllUsers of 25 movies
+       to file in parquet format.  See the details in MovieLensALS.
+       
+   c.  The best result (15 min) I got is using 2 m3.2xlarge which has 16vcore each and 23040MB disk spaces.  I use the followings
    
-        val pRatedDS = prDS.join(movieDS, prDS("movieId") === movieDS("id"), "inner").select($"id", $"title", $"genres").as[Movie]
-        val pUnratedDS = movieDS.except(pRatedDS).withColumnRenamed("id", "movieId").withColumn("userId", lit(pUserId)) //matches with ALS required fields
    
-   d. CSV data source does not support array<string> data type.  I have to use udf
+      --num-executors,6,--executor-cores,5,--executor-memory,6200m, --conf,spark.executor.extraJavaOptions='-XX:ThreadStackSize=2048',--conf,spark.sql.shuffle.partitions=40,--conf,spark.default.parallelism=40
+        
+   d. Here is how I got that.  I allocate 3 executors to each node and allocate 5 cores to each executor. Therefore, 
+      non-driver node use 15 cores and driver node use (15 + 1).  The 1 core is for ApplicationMaster to launch driver.
+      Then I calculate executor memory allocated. I cannot use 23040 / 3 executors / 1.1 (0.1 for executor overhead)
+      since one of node will be used to AM to launch driver.  I have to subtract 1.408GB from 23040 first.  I got that 
+      number from ResourceManager console. Each one can have 6500MB.  I leave a little cushion and chose 6200MB.
+      
+   e. Now, parallelism is very important. It is suggested each core should take on 2-4 tasks to utilize the best.
+      6 executor x 5 x 2.  I probably can parallelism.   However, I am familiar with MovieLensALS.  The most heavy stage
+      of ALS cycles has 42 tasks.  That's why I chose 40 for both parallelism and shuffle partitions.
+      
+   f. Prior to this choice,  I tried 3 m3.xlarge which has 8 vcores and 11520MB disk space.  I got 22 minutes from 
+      3 executors (1 executor each node) x 5 cores and 23 minutes from 5 executors (2 + 2 + 1, for the driver node) x 
+      4 cores.  Notice that I used 3 m3.xlarge but 2 m3.2xlarge.  No additional cost occure by upgrading. The major
+      improvement is on both most heavy stage of ALS cycle: dropped from 1.6 - 1.9 minute to 55-60 seconds and two 
+      joins at final stages due to additional computing power.
+      
+   g.  I encountered 'OOM' Java Heap space issue in the beginning.  I solved it by using KryoSerialize 
+       and persist with StorageLevel.MEMORY_ONLY_SER.  I dropped using Dataset of customized Rating and Movie
+       class and generic DataFrame instead after knowing DataFrame perform a little better due to no extra 
+       encoding and decoding overhead inolved.  Also, I have to register special encoder for those customized
+       classes for KryoSerialize.
+       
+   10. I had failed tasks and failed attempt and even failed job due to failed multiple attempt.  I looked
+       into stderr and found stackoverflow is the cause.  Therefore, I added *-XX:ThreadStackSize=2048*.  
+       Notice this does not take away space from neither 'yarn.nodemanager.resource.memory-mb' in 
+       yarn-site.xml nor executor-memory which is part of the nodemanager configuration.
+       
+   11. I started to pay more attention to resource manager console. Node link page is very helpful.  It tells
+       me how much memory and how many cores being allocated for each node.  I found out yarn only allocate
+       one core for each executor even though I requested 5 cores.  That information does not show in spark-history 
+       console.  I googled to find the solution and DominantResourceCalculator comes up.   I added the followings to
+       tuning.json which the configuration file used for AWS deployment       
+      
+       
+        {
+           "Classification": "capacity-scheduler",
+           "Properties": {
+             "yarn.scheduler.capacity.resource-calculator": "org.apache.hadoop.yarn.util.resource.DominantResourceCalculator"
+           }
+         }
+                                   
+   12.  I avoid using AWS 'maximizeResourceAllocation' option. It does not allocate driver node to any 
+        executor and waste resources.  However, well distributed load across executors is ideal but not always possible.   
+        I found out that tasks of 7 ALS cycles, including the refit to the whole population, are not load well 
+        distributed. The majority tasks went to one executor only.   However, loads well-distributed across 
+        executors do happen to 2 join operations at final stages.  As Spark document said about 
+        'spark.default.parallelism' 
+           
+           
+        Default number of partitions in RDDs returned by transformations like join, reduceByKey, and parallelize when not set by user.    
+    
+
+   13.  For Spark performance tuning and memory optimization, I consulted with the following documents.
+        https://spark.apache.org/docs/latest/tuning.html
+        http://blog.cloudera.com/blog/2015/03/how-to-tune-your-apache-spark-jobs-part-2, Sandy Ryza.
+        http://www.treselle.com/blog/apache-spark-performance-tuning-degree-of-parallelism/, 4 parts series
+        https://rea.tech/how-we-optimize-apache-spark-apps/
+        
+   14.  Spark performance tuning in AWS should be tuned to the nature of application.   MovieLensALS is more computing
+        intensive than memory consumption application.  I just scratched the surface and more improvement to come.
+            
+   
+Other notes
+   
+   a. CSV data source does not support array<string> data type.  I have to use udf
    
         val stringify = udf(vs: Seq[String] => s"""[${vs.mkString(",")}]""")     
       
-   f. How to de-duplicate Dataset records     
+   b. How to de-duplicate Dataset records     
            
         ds.distinct()
         df.dropDuplicates(col1: String, cols: String*)
         df.dropDuplicates(cols: Array[String])
         df.dropDuplicates(cols: Seq[String])
            
-   e. How to generate unique Id, monotonically_increasing_id() is one of sql functions.  It is incremental but
+   c. How to generate unique Id, monotonically_increasing_id() is one of sql functions.  It is incremental but
       not continuous
       
         df.withColumn(""uniqueId", monotonically_increasing_id()) 
