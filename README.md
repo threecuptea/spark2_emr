@@ -76,58 +76,61 @@
       the debug reason.  I use python subprocess and json modules to easily achieve this.
       
 3. I finally pushed MovieLensALS and MovieLensALSCv with largest Datset to EMR with manual tuning (
-not allocateMaximumResource) and was able to finish MovieLensALS in 15 minutes (shown in AWS console) without any 
+not using maximizeResourceAllocation) and was able to finish MovieLensALS in 15 minutes (shown in AWS console) without any 
 failed tasks or failed attempt. The specs and process are as the followings
 
-   a.  I used ml-latest.zip in https://grouplens.org/datasets/movielens/.  That has more than 26 million of records
-       total size is more than 1.09GB
+   a.  I used ml-latest.zip in https://grouplens.org/datasets/movielens/.  That has more than 26 million of rating 
+       records and total size is more than 1.09GB
              
    b.  MovieLensALS application is reading both rating and movie data set.  Split rating into training, validation 
-       and test data set. Apply ALS process: fit training set, ransform validation data set and calculate rmse 
-       using param grid of 6 (3 reg-param x 2 latent factor) to find the best parameters and model.
+       and test data set. Apply ALS process: fit training set, transform validation data set and calculate rmse. 
+       I used param grid of 6 (3 reg-params x 2 latent factors) to find the best parameters and model.
        This means 6 full ALS cycles and each cycle running maxIter 20.  I apply the result to test data set to make sure
-       the best model is not over-fitting or under-fitting.  Then I refit the best paramters to full rating set.       
-       I called the result augmented model.  Then I used two approaches to get recommendation for a test userId=6001.
-       Both require join partial rating and movie partially.  Then I stored recommendForAllUsers of 25 movies
-       to file in parquet format.  See the details in MovieLensALS.
+       the best model is not over-fitting or under-fitting.  Then I refit the best parameters to full rating set.       
+       I called the result augmented model.  Then I used augmented model to get recommendation for a test userId=6001.
+       There are two approaches and both require join rating and movie partially.  Fonally I stored 
+       recommendForAllUsers of 25 movies to file in parquet format.  See the details in MovieLensALS.
        
-   c.  The best result (15 min) I got is using 2 m3.2xlarge which has 16vcore each and 23040MB disk spaces.  I use the followings
+   c.  The best result (15 min) I got is using 2 m3.2xlarge nodes which has 16vcore and 23040MB disk spaces each.  
+       I use the followings
    
    
       --num-executors,6,--executor-cores,5,--executor-memory,6200m, --conf,spark.executor.extraJavaOptions='-XX:ThreadStackSize=2048',--conf,spark.sql.shuffle.partitions=40,--conf,spark.default.parallelism=40
         
-   d. Here is how I got that.  I allocate 3 executors to each node and allocate 5 cores to each executor. Therefore, 
-      non-driver node use 15 cores and driver node use (15 + 1).  The 1 core is for ApplicationMaster to launch driver.
-      Then I calculate executor memory allocated. I cannot use 23040 / 3 executors / 1.1 (0.1 for executor overhead)
-      since one of node will be used to AM to launch driver.  I have to subtract 1.408GB from 23040 first.  I got that 
-      number from ResourceManager console. Each one can have 6500MB.  I leave a little cushion and chose 6200MB.
+   d. Here is how I got here.  I allocate 3 executors to each node and 5 cores per each executor. Therefore, 
+      non-driver node use 15 cores in total and driver node use (15 + 1) cores.  The 1 core is for ApplicationMaster to 
+      launch the driver. Then I calculate executor memory allocated. I cannot use 23040 / 3 executors / 1.1 
+      (0.1 for executor memory overhead) since one of node will be used to AM to launch driver.  I have to subtract
+      1.408GB from 23040 first.  I got that number from ResourceManager console. Each one can have 6500MB.  
+      I leave a little cushion and chose 6200MB.
       
-   e. Now, parallelism is very important. It is suggested each core should take on 2-4 tasks to utilize the best.
-      6 executor x 5 x 2.  I probably can parallelism.   However, I am familiar with MovieLensALS.  The most heavy stage
-      of ALS cycles has 42 tasks.  That's why I chose 40 for both parallelism and shuffle partitions.
+   e. Now, parallelism is very important. It is suggested each core should take on 2-4 tasks to best utilize its 
+      resources. 6 executor x 5 x 2.  I probably can use 60 parallelism.   However, I am familiar with MovieLensALS.  
+      The most heavy stage of ALS cycles has 42 tasks.  That's why I chose 40 for both parallelism and shuffle partitions.
       
    f. Prior to this choice,  I tried 3 m3.xlarge which has 8 vcores and 11520MB disk space.  I got 22 minutes from 
-      3 executors (1 executor each node) x 5 cores and 23 minutes from 5 executors (2 + 2 + 1, for the driver node) x 
-      4 cores.  Notice that I used 3 m3.xlarge but 2 m3.2xlarge.  No additional cost occure by upgrading. The major
-      improvement is on both most heavy stage of ALS cycle: dropped from 1.6 - 1.9 minute to 55-60 seconds and two 
-      joins at final stages due to additional computing power.
+      3 executors (1 executor each node) x 5 cores per executor and 23 minutes from 5 executors 
+      (2 + 2 + 1, 1 is for the driver node) x 4 cores per executor.  Notice that I used 3 m3.xlarge but 2 m3.2xlarge.  
+      No additional cost occure by upgrading to m3.2xlarge. The major improvement is on both most heavy stage of ALS 
+      cycle which dropped from 1.6 - 1.9 minute to 55-60 seconds and two joins at final stages due to better computing 
+      power. MovieLensALS is CPU dominant application.
       
-   g.  I encountered 'OOM' Java Heap space issue in the beginning.  I solved it by using KryoSerialize 
+   g.  I encountered 'OOM' Java Heap space issue in the beginning.  I solved it by using KryoSerializer 
        and persist with StorageLevel.MEMORY_ONLY_SER.  I dropped using Dataset of customized Rating and Movie
-       class and generic DataFrame instead after knowing DataFrame perform a little better due to no extra 
-       encoding and decoding overhead inolved.  Also, I have to register special encoder for those customized
-       classes for KryoSerialize.
+       classes and using generic DataFrame instead after knowing DataFrame perform a little better due to no extra 
+       encoding and decoding overhead involved.  Also, I have to register special encoder for those customized
+       classes for KryoSerializer.  That's unnecessary hassle.  
        
    10. I had failed tasks and failed attempt and even failed job due to failed multiple attempt.  I looked
        into stderr and found stackoverflow is the cause.  Therefore, I added *-XX:ThreadStackSize=2048*.  
        Notice this does not take away space from neither 'yarn.nodemanager.resource.memory-mb' in 
-       yarn-site.xml nor executor-memory which is part of the nodemanager configuration.
+       yarn-site.xml nor executor-memory which is part of the nodemanager memory.
        
    11. I started to pay more attention to resource manager console. Node link page is very helpful.  It tells
-       me how much memory and how many cores being allocated for each node.  I found out yarn only allocate
-       one core for each executor even though I requested 5 cores.  That information does not show in spark-history 
-       console.  I googled to find the solution and DominantResourceCalculator comes up.   I added the followings to
-       tuning.json which the configuration file used for AWS deployment       
+       me how much memory and how many cores being allocated for each node.  I found out one alraming fact: 
+       yarn only allocates one core for each executor even though I requested 5 cores.  That information does not show 
+       in spark-history console.  I googled to find the solution and DominantResourceCalculator comes up.   
+       I added the followings to tuning.json which the configuration file I used for AWS deployment       
       
        
         {
@@ -139,7 +142,7 @@ failed tasks or failed attempt. The specs and process are as the followings
                                    
    12.  I avoid using AWS 'maximizeResourceAllocation' option. It does not allocate driver node to any 
         executor and waste resources.  However, well distributed load across executors is ideal but not always possible.   
-        I found out that tasks of 7 ALS cycles, including the refit to the whole population, are not load well 
+        I found out that tasks of 7 ALS cycles, including the refit to the whole population, load are not well 
         distributed. The majority tasks went to one executor only.   However, loads well-distributed across 
         executors do happen to 2 join operations at final stages.  As Spark document said about 
         'spark.default.parallelism' 
@@ -155,7 +158,7 @@ failed tasks or failed attempt. The specs and process are as the followings
         https://rea.tech/how-we-optimize-apache-spark-apps/
         
    14.  Spark performance tuning in AWS should be tuned to the nature of application.   MovieLensALS is more computing
-        intensive than memory consumption application.  I just scratched the surface and more improvement to come.
+        intensive than memory consumption application.  I just scratched the surface and have more improvement to come.
             
    
 Other notes
