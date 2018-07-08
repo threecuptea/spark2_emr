@@ -14,7 +14,7 @@
       This requires the following a couple of steps:      
       i)  Provision instances with a key pair.      
       ii) EMR uses security group ElasticMapReduce-master and ElasticMapReduce-slave to provision master and slave 
-          instances. Those are not replacable.  However. we can add additional rule to those security groups. We have to 
+          instances. Those are irreplaceable.  However. we can add additional rule to those security groups. We have to 
           at least add SSH rule to ElasticMapReduce-master so that we can access the master instance.  
           See http://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-connect-master-node-ssh.html. For example.
                     
@@ -57,11 +57,10 @@
    The performance improves a lot.  It only executes file scan once.  That's in job 1. The rest of jobs re-use cache(). 
    
 2. Automate the creation of EMR Spark cluster and the deployment of FlightSample with aws-cli (A big step).   
-   The sample script is in scripts/aws_create_cluster_deploy_flight.sh).  Futthermore, I enhance it to generic 
-   (scripts/create_emr_cluster_deploy_app_tuning2.sh) so that I can re-use it in recommend and other projects.  It is followed
-   by emr_adhoc.py to retrive the cluster state and download the result output when steps are completed.  This is a 
-   simple one for developer.  DevOp use other professional tool like Terraform to accomplish it.    
-
+   The sample script is in scripts/aws_create_cluster_deploy_flight.sh).  Furthermore, I enhance it to generic 
+   (scripts/create_emr_cluster_deploy_app_tuning2.sh) so that I can re-use it in recommend and other projects.  It is 
+   followed by emr_adhoc.py to retrieve the cluster state and download the result output when steps are completed.  
+    
    There are a couple of key points:
    
    a. I must specify --deploy-mode cluster since my jar file is in S3.  In contrast, my application files must be in 
@@ -75,33 +74,33 @@
       working folder with s3 one to get all log and final outputs otherwise I would retrieve the master public dns for 
       the debug reason.  I use python subprocess and json modules to easily achieve this.
       
-3. I finally pushed MovieLensALS and MovieLensALSCv with largest Datset to EMR with manual tuning (
-not using maximizeResourceAllocation) and was able to finish MovieLensALS in 15 minutes (shown in AWS console) without any 
-failed tasks or failed attempt. The specs and process are as the followings
+3. I finally complete MovieLensALS and MovieLensALSCv jobs on 26 million data set in AWS EMR cluster with manual tuning 
+instead of using maximizeResourceAllocation and was able to finish MovieLensALS in 15 minutes (shown in AWS console) 
+without any failed tasks or failed attempt. The specs and process are as the followings
 
    a.  I used ml-latest.zip in https://grouplens.org/datasets/movielens/.  That has more than 26 million of rating 
        records and total size is more than 1.09GB
              
    b.  MovieLensALS application is reading both rating and movie data set.  Split rating into training, validation 
-       and test data set. Apply ALS process: fit training set, transform validation data set and calculate rmse. 
+       and test data set. Apply ALS process: fit training set, transform validation data set and calculate RMSE. 
        I used param grid of 6 (3 reg-params x 2 latent factors) to find the best parameters and model.
        This means 6 full ALS cycles and each cycle running maxIter 20.  I apply the result to test data set to make sure
        the best model is not over-fitting or under-fitting.  Then I refit the best parameters to full rating set.       
        I called the result augmented model.  Then I used augmented model to get recommendation for a test userId=6001.
-       There are two approaches and both require join rating and movie partially.  Fonally I stored 
-       recommendForAllUsers of 25 movies to file in parquet format.  See the details in MovieLensALS.
+       There are two approaches and both require join rating and movie partially.  Finally I stored 
+       recommendForAllUsers of 25 movies to file in parquet format.  See the details in MovieLensALSEmr.
        
-   c.  The best result (15 min) I got is using 2 m3.2xlarge nodes which has 16vcore and 23040MB disk spaces each.  
+   c.  The best result is 15 min that I got by using 2 m3.2xlarge nodes which has 16vcore and 23040MB memory each.  
        I use the followings
    
    
       --num-executors,6,--executor-cores,5,--executor-memory,6200m, --conf,spark.executor.extraJavaOptions='-XX:ThreadStackSize=2048',--conf,spark.sql.shuffle.partitions=40,--conf,spark.default.parallelism=40
         
-   d. Here is how I got here.  I allocate 3 executors to each node and 5 cores per each executor. Therefore, 
+   d. Here is how I got here.  I allocate 3 executors per node and 5 cores per executor. Therefore, 
       non-driver node use 15 cores in total and driver node use (15 + 1) cores.  The 1 core is for ApplicationMaster to 
       launch the driver. Then I calculate executor memory allocated. I cannot use 23040 / 3 executors / 1.1 
-      (0.1 for executor memory overhead) since one of node will be used to AM to launch driver.  I have to subtract
-      1.408GB from 23040 first.  I got that number from ResourceManager console. Each one can have 6500MB.  
+      (0.1 for executor memory overhead) since one of node will be used for AM to launch the driver.  I have to subtract
+      1.408GB from 23.04GB first.  I got 1.408GB from ResourceManager console. Each one can have 6500MB.  
       I leave a little cushion and chose 6200MB.
       
    e. Now, parallelism is very important. It is suggested each core should take on 2-4 tasks to best utilize its 
@@ -111,7 +110,7 @@ failed tasks or failed attempt. The specs and process are as the followings
    f. Prior to this choice,  I tried 3 m3.xlarge which has 8 vcores and 11520MB disk space.  I got 22 minutes from 
       3 executors (1 executor each node) x 5 cores per executor and 23 minutes from 5 executors 
       (2 + 2 + 1, 1 is for the driver node) x 4 cores per executor.  Notice that I used 3 m3.xlarge but 2 m3.2xlarge.  
-      No additional cost occure by upgrading to m3.2xlarge. The major improvement is on both most heavy stage of ALS 
+      No additional cost occure by upgrading to m3.2xlarge. The major improvements are on most heavy stage of ALS 
       cycle which dropped from 1.6 - 1.9 minute to 55-60 seconds and two joins at final stages due to better computing 
       power. MovieLensALS is CPU dominant application.
       
@@ -121,13 +120,13 @@ failed tasks or failed attempt. The specs and process are as the followings
        encoding and decoding overhead involved.  Also, I have to register special encoder for those customized
        classes for KryoSerializer.  That's unnecessary hassle.  
        
-   10. I had failed tasks and failed attempt and even failed job due to failed multiple attempt.  I looked
+   10. I had failed tasks and failed attempt and even failed job due to failed multiple attempts.  I looked
        into stderr and found stackoverflow is the cause.  Therefore, I added *-XX:ThreadStackSize=2048*.  
        Notice this does not take away space from neither 'yarn.nodemanager.resource.memory-mb' in 
-       yarn-site.xml nor executor-memory which is part of the nodemanager memory.
+       yarn-site.xml nor executor-memory which is part of the nodemanager memory which use heap instead of stack.
        
    11. I started to pay more attention to resource manager console. Node link page is very helpful.  It tells
-       me how much memory and how many cores being allocated for each node.  I found out one alraming fact: 
+       me how much memory and how many cores being allocated for each node.  I found out one alarming fact: 
        yarn only allocates one core for each executor even though I requested 5 cores.  That information does not show 
        in spark-history console.  I googled to find the solution and DominantResourceCalculator comes up.   
        I added the followings to tuning.json which the configuration file I used for AWS deployment       
@@ -144,7 +143,7 @@ failed tasks or failed attempt. The specs and process are as the followings
         executor and waste resources.  However, well distributed load across executors is ideal but not always possible.   
         I found out that tasks of 7 ALS cycles, including the refit to the whole population, load are not well 
         distributed. The majority tasks went to one executor only.   However, loads well-distributed across 
-        executors do happen to 2 join operations at final stages.  As Spark document said about 
+        executors do happen to 2 join operations at final stages. As Spark document said about 
         'spark.default.parallelism' 
            
            
@@ -159,6 +158,29 @@ failed tasks or failed attempt. The specs and process are as the followings
         
    14.  Spark performance tuning in AWS should be tuned to the nature of application.   MovieLensALS is more computing
         intensive than memory consumption application.  I just scratched the surface and have more improvement to come.
+        
+   15.  For Capacity Scheduler,              
+        a. Refer to https://community.pivotal.io/s/article/How-to-configure-queues-using-YARN-capacity-scheduler-xml 
+           regarding queue hierarchy, queue resource allocation (percentage), permission of submitting application 
+           to queue etc.  Two take aways, always set 'hadoop,yarn,mapred,hdfs' to 
+           'yarn.scheduler.capacity.root.acl_submit_applications' so those default users can submit jobs; 
+           use -Dspark.yarn.queue=<queue-name> to submit Spark job to a specific queue
+        b. Refer to https://hortonworks.com/blog/yarn-capacity-scheduler for minimum user percentage and user limit 
+           factor.  Use them to prevent one user from overtake the whole queue. Enabling preemption allows an 
+           application to get back their minimum capacity which is being used in another queue as elastic. However, 
+           Preemption only work across queues vs. minimum user percentage and user limit factor work within the queue.
+        c. Refer to 
+           https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.6.2/bk_yarn-resource-management/content/ch_capacity_scheduler.html
+           for a comprehensive guide.
+           a) Elastically allocate resources among queue but limited by maximum.capacity of a queue.         
+           b) FIFO or Fair scheduling ordering policy: Fair ordering policy either allocate equal share for all 
+              submitted jobs of the queue or use enable-size-based-weight to allocate resource to individual 
+              applications based on their size.
+           c) DominantResourceCalculator uses Dominant Resource Fairness (DRF) model of resource allocation. For example, 
+              if user A runs CPU-heavy tasks and user B runs memory-heavy tasks, the DRF attempts to equalize CPU share
+              of user A with the memory share of user B. In this case, the DRF allocates more CPU and less memory 
+              to the tasks run by user A, and allocates less CPU and more memory to the tasks run by user B.  It has
+              advantages on mixed work load: ex. CPU-constrained Storm on YARN job and memory-constrained MapReduce job.     
             
    
 Other notes
@@ -179,5 +201,8 @@ Other notes
       
         df.withColumn(""uniqueId", monotonically_increasing_id()) 
         val inputRows = df.rdd.zipWithUniqueId.map{
-           case (r: Row, id: Long) => Row.fromSeq(id +: r.toSeq)}esc
-        spark.createDataFrame(inputRows, StructType(StructField("id", LongType, false) +: df.schema.fields))           
+           case (r: Row, id: Long) => Row.fromSeq(id +: r.toSeq)}}
+        spark.createDataFrame(inputRows, StructType(StructField("id", LongType, false) +: df.schema.fields))  
+        
+            
+       

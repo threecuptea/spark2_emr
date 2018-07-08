@@ -72,11 +72,11 @@ object MovieLensALSEmr {
     augModelFromALS.transform(sUnratedDS).sort(desc("prediction")).show(false)
 
     val sUserRecommendDS = recommendDS.filter($"userId" === sUserId)
+    val sUserMrDS = mrDS.filter('userId === sUserId)
 
     println(s"The top recommendation on AllUsers filter with  user=${sUserId} from ALS model and exclude rated movies")
-    val sUserRatedRecommendDS = sUserRecommendDS.join(mrDS.select('userId, 'movieId),
-      Seq("userId", "movieId"), "inner").select('userId, 'movieId, 'rating)
-    sUserRecommendDS.except(sUserRatedRecommendDS).join(movieDS, 'movieId === 'id, "inner").
+    //The set to excluded does not need to subset of the first one. Do I have to sort since recommendDS shoudl be sorte
+    sUserRecommendDS.except(sUserMrDS).join(movieDS, 'movieId === 'id, "inner").
       select($"movieId", $"title", $"genres", $"userId", $"rating").sort(desc("rating")).show(false)
 
     recommendDS.write.option("header", true).parquet(s"${outPath}/recommendAll")  //Used as shared resource
