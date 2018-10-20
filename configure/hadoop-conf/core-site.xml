@@ -21,7 +21,7 @@
   <property>
     <!-- URI of NN. Fully qualified. No IP.-->
     <name>fs.defaultFS</name>
-    <value>hdfs://ip-10-102-214-210.us-west-2.compute.internal:8020</value>
+    <value>hdfs://ip-10-227-38-49.us-west-2.compute.internal:8020</value>
   </property>
 
 
@@ -112,6 +112,16 @@
   </property>
 
   <property>
+    <name>hadoop.proxyuser.presto.hosts</name>
+    <value>*</value>
+  </property>
+
+  <property>
+    <name>hadoop.proxyuser.presto.groups</name>
+    <value>*</value>
+  </property>
+
+  <property>
     <name>hadoop.security.key.default.bitlength</name>
     <value>256</value>
   </property>
@@ -138,7 +148,7 @@
 
   <property>
     <name>hadoop.security.key.provider.path</name>
-    <value>kms://http@ip-10-102-214-210.us-west-2.compute.internal:9700/kms</value>
+    <value>kms://http@ip-10-227-38-49.us-west-2.compute.internal:9700/kms</value>
   </property>
 
   <property>

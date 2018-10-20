@@ -102,7 +102,8 @@ class MovieLensCommon(spark: SparkSession) extends Serializable {
     valDS.persist(StorageLevel.MEMORY_ONLY_SER)
     testDS.persist(StorageLevel.MEMORY_ONLY_SER)
 
-    val cv = new CrossValidator().setEstimator(als).setEstimatorParamMaps(getParamGrid(als)).setEvaluator(evaluator).setNumFolds(5)
+    val cv = new CrossValidator().setEstimator(als).setEstimatorParamMaps(getParamGrid(als)).setEvaluator(evaluator)
+      .setNumFolds(5).setParallelism(5)
     val cvModel = cv.fit(trainDS)
     val prediction = cvModel.transform(valDS)
     val bestRmse = cv.getEvaluator.evaluate(prediction)

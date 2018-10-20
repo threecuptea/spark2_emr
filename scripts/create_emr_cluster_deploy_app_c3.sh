@@ -27,6 +27,6 @@ mkdir $local_working
 aws emr create-cluster --name $id --release-label emr-5.13.0 --applications Name=Spark --log-uri $s3_folder_path/ \
 --ec2-attributes KeyName=emr-spark --use-default-roles \
 --instance-groups InstanceGroupType=MASTER,InstanceType=m3.xlarge,InstanceCount=1 \
-InstanceGroupType=CORE,InstanceType=m3.2xlarge,InstanceCount=2 \
+InstanceGroupType=CORE,InstanceType=c3.4xlarge,InstanceCount=2 \
 --configurations file://tuning.json --steps Type=Spark,Name="Spark Program",ActionOnFailure=CANCEL_AND_WAIT,\
-Args=[--deploy-mode,cluster,--name,als-m32xlarge-3-6-5-40,--num-executors,6,--executor-cores,5,--executor-memory,6200m,--conf,spark.executor.extraJavaOptions='-XX:ThreadStackSize=2048',--conf,spark.sql.shuffle.partitions=40,--conf,spark.default.parallelism=40,--class,${APPMAP[$app]},$s3_jar_path,$s3_folder_path] | python2.7 scripts/emr_adhoc.py
+Args=[--deploy-mode,cluster,--name,als-c34xlarge-2-3-5-40,--num-executors,6,--executor-cores,5,--executor-memory,3050m,--conf,spark.executor.extraJavaOptions='-XX:ThreadStackSize=2048',--conf,spark.sql.shuffle.partitions=40,--conf,spark.default.parallelism=40,--class,${APPMAP[$app]},$s3_jar_path,$s3_folder_path] | python2.7 scripts/emr_adhoc.py

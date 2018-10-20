@@ -22,17 +22,17 @@
 
   <property>
     <name>dfs.namenode.rpc-address</name>
-    <value>ip-10-102-214-210.us-west-2.compute.internal:8020</value>
+    <value>ip-10-227-38-49.us-west-2.compute.internal:8020</value>
   </property>
 
   <property>
     <name>dfs.namenode.http-address</name>
-    <value>ip-10-102-214-210.us-west-2.compute.internal:50070</value>
+    <value>ip-10-227-38-49.us-west-2.compute.internal:50070</value>
   </property>
 
   <property>
     <name>dfs.namenode.https-address</name>
-    <value>ip-10-102-214-210.us-west-2.compute.internal:50470</value>
+    <value>ip-10-227-38-49.us-west-2.compute.internal:50470</value>
   </property>
 
   <property>
@@ -97,7 +97,7 @@
 
   <property>
     <name>dfs.encryption.key.provider.uri</name>
-    <value>kms://http@ip-10-102-214-210.us-west-2.compute.internal:9700/kms</value>
+    <value>kms://http@ip-10-227-38-49.us-west-2.compute.internal:9700/kms</value>
   </property>
 
   <property>

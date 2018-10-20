@@ -88,7 +88,6 @@ export HADOOP_CLASSPATH="$HADOOP_CLASSPATH:/usr/share/aws/emr/ddb/lib/emr-ddb-ha
 export HADOOP_CLASSPATH="$HADOOP_CLASSPATH:/usr/share/aws/emr/goodies/lib/emr-hadoop-goodies.jar"
 
 
-export HADOOP_CLASSPATH="$HADOOP_CLASSPATH:/usr/share/aws/emr/kinesis/lib/emr-kinesis-hadoop.jar"
 
 
 # Add CloudWatch sink jar to classpath
@@ -98,6 +97,6 @@ export HADOOP_CLASSPATH="$HADOOP_CLASSPATH:/usr/share/aws/emr/cloudwatch-sink/li
 export HADOOP_CLASSPATH="$HADOOP_CLASSPATH:/usr/share/aws/emr/security/conf:/usr/share/aws/emr/security/lib/*"
 
 export HADOOP_OPTS="$HADOOP_OPTS -server -XX:OnOutOfMemoryError='kill -9 %p'"
-export HADOOP_NAMENODE_HEAPSIZE=1740
-export HADOOP_DATANODE_HEAPSIZE=757
-export HADOOP_JOB_HISTORYSERVER_HEAPSIZE=2396
+export HADOOP_NAMENODE_HEAPSIZE=3276
+export HADOOP_DATANODE_HEAPSIZE=1064
+export HADOOP_JOB_HISTORYSERVER_HEAPSIZE=2703

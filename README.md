@@ -1,4 +1,4 @@
-### spark2_emr collects spark2 projects deployed in AWS EMR cluster.  A lot of companies deployed Spark applications on AWS EMR to take advantage its integrated environments.  The purpose is to be familiar with AWS EMR and futher migrate my spark_tutorial_2 and spark_python_16 projects to EMR.  Automate and run Spark2 applications in real world.
+### It collects spark2 projects deployed to AWS EMR . Automate the whole process and successfully finished ALS recommendation jobs on 26 million Movielens data in 15 minutes using limited AWS resoures
 #### The topics include:
 
 1. MyFlightSample Spark application: this is inpired by the example https://aws.amazon.com/blogs/aws/new-apache-spark-on-amazon-emr/.  
@@ -57,7 +57,7 @@
    The performance improves a lot.  It only executes file scan once.  That's in job 1. The rest of jobs re-use cache(). 
    
 2. Automate the creation of EMR Spark cluster and the deployment of FlightSample with aws-cli (A big step).   
-   The sample script is in scripts/aws_create_cluster_deploy_flight.sh).  Furthermore, I enhance it to generic 
+    Furthermore, I enhance it to be generic 
    (scripts/create_emr_cluster_deploy_app_tuning2.sh) so that I can re-use it in recommend and other projects.  It is 
    followed by emr_adhoc.py to retrieve the cluster state and download the result output when steps are completed.  
     
@@ -74,7 +74,7 @@
       working folder with s3 one to get all log and final outputs otherwise I would retrieve the master public dns for 
       the debug reason.  I use python subprocess and json modules to easily achieve this.
       
-3. I finally complete MovieLensALS and MovieLensALSCv jobs on 26 million data set in AWS EMR cluster with manual tuning 
+3. I finally complete MovieLensALSEmr and MovieLensALSCvEmr jobs on 26 million data set in AWS EMR cluster with manual tuning 
 instead of using maximizeResourceAllocation and was able to finish MovieLensALS in 15 minutes (shown in AWS console) 
 without any failed tasks or failed attempt. The specs and process are as the followings
 
@@ -87,11 +87,13 @@ without any failed tasks or failed attempt. The specs and process are as the fol
        This means 6 full ALS cycles and each cycle running maxIter 20.  I apply the result to test data set to make sure
        the best model is not over-fitting or under-fitting.  Then I refit the best parameters to full rating set.       
        I called the result augmented model.  Then I used augmented model to get recommendation for a test userId=6001.
-       There are two approaches and both require join rating and movie partially.  Finally I stored 
+       There are two approaches and both require join with movie partially.  Finally I stored 
        recommendForAllUsers of 25 movies to file in parquet format.  See the details in MovieLensALSEmr.
        
-   c.  The best result is 15 min that I got by using 2 m3.2xlarge nodes which has 16vcore and 23040MB memory each.  
-       I use the followings
+   c.  The best result is 15 min that I got by using 2 m3.2xlarge nodes which has 16vcore and 23040MB memory each. 
+       I use EMR 5.13.0 that comes with Spark 2.3.0.  For some reason, its parallism better and the performance is far better 
+       than 5.17.0 that comes with Spark 2.3.1. I use the followings.  I did try c3.4xlarge which has the same specs.
+       of vcore as well as memory but better computing power with cost of 1.5 times. That finish in 11 min 
    
    
       --num-executors,6,--executor-cores,5,--executor-memory,6200m, --conf,spark.executor.extraJavaOptions='-XX:ThreadStackSize=2048',--conf,spark.sql.shuffle.partitions=40,--conf,spark.default.parallelism=40
@@ -101,35 +103,44 @@ without any failed tasks or failed attempt. The specs and process are as the fol
       launch the driver. Then I calculate executor memory allocated. I cannot use 23040 / 3 executors / 1.1 
       (0.1 for executor memory overhead) since one of node will be used for AM to launch the driver.  I have to subtract
       1.408GB from 23.04GB first.  I got 1.408GB from ResourceManager console. Each one can have 6500MB.  
-      I leave a little cushion and chose 6200MB.
+      I leave a little cushion and chose 6200MB.    
       
    e. Now, parallelism is very important. It is suggested each core should take on 2-4 tasks to best utilize its 
       resources. 6 executor x 5 x 2.  I probably can use 60 parallelism.   However, I am familiar with MovieLensALS.  
-      The most heavy stage of ALS cycles has 42 tasks.  That's why I chose 40 for both parallelism and shuffle partitions.
+      The most heavy stage of ALS cycles has 42 stages.  That's why I chose 40 for both parallelism and shuffle partitions.
+      I did try 60 parallism and process in 16 minute
       
    f. Prior to this choice,  I tried 3 m3.xlarge which has 8 vcores and 11520MB disk space.  I got 22 minutes from 
       3 executors (1 executor each node) x 5 cores per executor and 23 minutes from 5 executors 
       (2 + 2 + 1, 1 is for the driver node) x 4 cores per executor.  Notice that I used 3 m3.xlarge but 2 m3.2xlarge.  
       No additional cost occure by upgrading to m3.2xlarge. The major improvements are on most heavy stage of ALS 
       cycle which dropped from 1.6 - 1.9 minute to 55-60 seconds and two joins at final stages due to better computing 
-      power. MovieLensALS is CPU dominant application.
+      power. MovieLensALS is CPU dominant application.  c.4xlarge also has vcore 16 and 23040gb and better computing power.
+      processor and each has 8 cores. It can finish in 11 minute.  It reduces to 33-38-43 sec.  However, 
+      However, it is 1.5 costly; $0.140/hr vs. $0.210/hr.  I got the following information from ResourceManager console 
+      when I use m3.2xlarge which make very good use of memory and cores.
+ 
+                        Memory used     Memory avail.  Core used     Core avail.
+      driver node        21.44GN        1.06GB           16 cores      0 core
+      non-driver node    20.06GB        2.44GB           15 cores      1 core
       
-   g.  I encountered 'OOM' Java Heap space issue in the beginning.  I solved it by using KryoSerializer 
-       and persist with StorageLevel.MEMORY_ONLY_SER.  I dropped using Dataset of customized Rating and Movie
-       classes and using generic DataFrame instead after knowing DataFrame perform a little better due to no extra 
-       encoding and decoding overhead involved.  Also, I have to register special encoder for those customized
-       classes for KryoSerializer.  That's unnecessary hassle.  
+     
+   g. I encountered 'OOM' Java Heap space issue in the beginning.  I solved it by using KryoSerializer 
+      and persist with StorageLevel.MEMORY_ONLY_SER.  I dropped using Dataset of customized Rating and Movie
+      classes and using generic DataFrame and customized schema instead after knowing DataFrame perform a little better 
+      due to no extra encoding and decoding overhead involved.  Also, I have to register special encoder for 
+      those customized classes for KryoSerializer.  That's unnecessary hassle.  
        
-   10. I had failed tasks and failed attempt and even failed job due to failed multiple attempts.  I looked
-       into stderr and found stackoverflow is the cause.  Therefore, I added *-XX:ThreadStackSize=2048*.  
-       Notice this does not take away space from neither 'yarn.nodemanager.resource.memory-mb' in 
-       yarn-site.xml nor executor-memory which is part of the nodemanager memory which use heap instead of stack.
+   h. I had failed tasks and failed attempts and even failed job due to multiple failed attempts.  I looked
+      into stderr and found stackoverflow is the cause.  Therefore, I added *-XX:ThreadStackSize=2048*.  
+      Notice this does not take away space from neither 'yarn.nodemanager.resource.memory-mb' in 
+      yarn-site.xml nor executor-memory which is part of the nodemanager memory which use heap instead of stack.
        
-   11. I started to pay more attention to resource manager console. Node link page is very helpful.  It tells
-       me how much memory and how many cores being allocated for each node.  I found out one alarming fact: 
-       yarn only allocates one core for each executor even though I requested 5 cores.  That information does not show 
-       in spark-history console.  I googled to find the solution and DominantResourceCalculator comes up.   
-       I added the followings to tuning.json which the configuration file I used for AWS deployment       
+   i. I started to pay more attention to resource manager console. Node link page is very helpful.  It tells
+      me how much memory and how many cores being allocated for each node.  I found out one alarming fact: 
+      yarn only allocates one core per executor even though I requested 5 cores.  That information does not show 
+      in spark-history console.  I googled to find the solution and DominantResourceCalculator comes up.   
+      I added the followings to tuning.json which the configuration file I used for AWS deployment       
       
        
         {
@@ -139,37 +150,37 @@ without any failed tasks or failed attempt. The specs and process are as the fol
            }
          }
                                    
-   12.  I avoid using AWS 'maximizeResourceAllocation' option. It does not allocate driver node to any 
-        executor and waste resources.  However, well distributed load across executors is ideal but not always possible.   
-        I found out that tasks of 7 ALS cycles, including the refit to the whole population, load are not well 
-        distributed. The majority tasks went to one executor only.   However, loads well-distributed across 
-        executors do happen to 2 join operations at final stages. As Spark document said about 
-        'spark.default.parallelism' 
+  j.  I avoid using AWS 'maximizeResourceAllocation' option. It does not allocate any executor to the driver node 
+      and waste resources.  However, well distributed load across executors is ideal but not always possible.
+      I found out that tasks of 7 ALS cycles, including the refit to the whole population, load are not well 
+      distributed. However, I can get 3 executor load well-distributed in the dominant node to some extent.  . 
+      Loads are well-distributed across executors do happen to 2 join operations at final stages. 
+      As Spark document said about 'spark.default.parallelism' 
            
            
         Default number of partitions in RDDs returned by transformations like join, reduceByKey, and parallelize when not set by user.    
     
 
-   13.  For Spark performance tuning and memory optimization, I consulted with the following documents.
-        https://spark.apache.org/docs/latest/tuning.html
-        http://blog.cloudera.com/blog/2015/03/how-to-tune-your-apache-spark-jobs-part-2, Sandy Ryza.
-        http://www.treselle.com/blog/apache-spark-performance-tuning-degree-of-parallelism/, 4 parts series
-        https://rea.tech/how-we-optimize-apache-spark-apps/
+  k.  For Spark performance tuning and memory optimization, I consulted with the following documents.
+      https://spark.apache.org/docs/latest/tuning.html
+      http://blog.cloudera.com/blog/2015/03/how-to-tune-your-apache-spark-jobs-part-2, Sandy Ryza.
+      http://www.treselle.com/blog/apache-spark-performance-tuning-degree-of-parallelism/, 4 parts series
+      https://rea.tech/how-we-optimize-apache-spark-apps/
         
-   14.  Spark performance tuning in AWS should be tuned to the nature of application.   MovieLensALS is more computing
-        intensive than memory consumption application.  I just scratched the surface and have more improvement to come.
+  l.  Spark performance tuning in AWS should be tuned to the nature of application.   MovieLensALS is more computing
+      intensive than memory consumption application.  I just scratched the surface and have more improvement to come.
         
-   15.  For Capacity Scheduler,              
-        a. Refer to https://community.pivotal.io/s/article/How-to-configure-queues-using-YARN-capacity-scheduler-xml 
+  m.  For Capacity Scheduler,              
+        i). Refer to https://community.pivotal.io/s/article/How-to-configure-queues-using-YARN-capacity-scheduler-xml 
            regarding queue hierarchy, queue resource allocation (percentage), permission of submitting application 
            to queue etc.  Two take aways, always set 'hadoop,yarn,mapred,hdfs' to 
            'yarn.scheduler.capacity.root.acl_submit_applications' so those default users can submit jobs; 
            use -Dspark.yarn.queue=<queue-name> to submit Spark job to a specific queue
-        b. Refer to https://hortonworks.com/blog/yarn-capacity-scheduler for minimum user percentage and user limit 
+        ii). Refer to https://hortonworks.com/blog/yarn-capacity-scheduler for minimum user percentage and user limit 
            factor.  Use them to prevent one user from overtake the whole queue. Enabling preemption allows an 
            application to get back their minimum capacity which is being used in another queue as elastic. However, 
            Preemption only work across queues vs. minimum user percentage and user limit factor work within the queue.
-        c. Refer to 
+        iii). Refer to 
            https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.6.2/bk_yarn-resource-management/content/ch_capacity_scheduler.html
            for a comprehensive guide.
            a) Elastically allocate resources among queue but limited by maximum.capacity of a queue.         
@@ -204,5 +215,23 @@ Other notes
            case (r: Row, id: Long) => Row.fromSeq(id +: r.toSeq)}}
         spark.createDataFrame(inputRows, StructType(StructField("id", LongType, false) +: df.schema.fields))  
         
-            
+   d. To view parguet file
+         
+        hadoop jar ./parquet-tools-1.8.3.jar cat --json \ 
+        file:///home/fandev/Downloads/emr-spark/recommend-1539734851/recommendAll/part-00000-c000.snappy.parquet 
+              
+        
+   e. AWS Glue Data Catalog can be used as external Hive metastore for Apache Spark, Apache Hive, and 
+      Presto (distriibuted SQL engineer) workloads on Amazon EMR.
+      
+   f. Ganglia, which provides a view of cluster resources usage, including memory and CPU. Symptoms of 
+      an unhealthy state can be: low percentage of CPU usage, a large number of idle CPUs, or memory spikes.   
+      
+   f. AWS EMR Zeppelin is similar to Jupyter Notebook.
+   
+   g. AWS instances:        
+      General purpose: m3.xlarge (8 cores), m3.2xlarge (16 cores)
+      Compute optimized: c3.xlarge, c3.2xlarge(15gb, 8vcore), c3.4xlarge, c3.8xlarge
+      Memory optimized: r3.xlarge, r3.2xlarge, r3.4xlarge, r3.8xlarge
+      
        

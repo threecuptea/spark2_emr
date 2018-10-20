@@ -24,10 +24,13 @@ import org.apache.spark.storage.StorageLevel
   * It would recommend 1193: "One Flew Over the Cuckoo's Nest", 904: "Rear Window" to sUser = 6001 even though
   * sUser = 6001 has rated that.
   *
-  * I finally exclude those rated to make results from those two approaches the same same.
+  * I exclude those rated to make results from those two approaches the same same.
   *
   *
   * @author sling/ threecuptea consolidated common methods into MovieLensCommon and refactored on 05/27/2018
+  *         refine to make this generic to run in Emr or not emr.  I should be able to
+  *         run against rating samples rating locally before promoting to Emr  8/12/2018,
+  *         it got to be able to work with both local and Emr environment
   */
 object MovieLensALSEmr {
 
@@ -54,7 +57,7 @@ object MovieLensALSEmr {
     //Need to match field names of rating, KEY POINT is coldStartStrategy = "drop": drop lines with 'prediction' = 'NaN'
     val als = new ALS().setMaxIter(20).setUserCol("userId").setItemCol("movieId").setRatingCol("rating").setColdStartStrategy("drop")
 
-    val bestParmsFromALS = (mlCommon.getBestParmMapFromALS(als, mrDS))
+    val bestParmsFromALS = mlCommon.getBestParmMapFromALS(als, mrDS)
     println(s"The best model from ALS was trained with param = ${bestParmsFromALS}")
     val augModelFromALS = als.fit(mrDS, bestParmsFromALS)
 
@@ -75,7 +78,7 @@ object MovieLensALSEmr {
     val sUserMrDS = mrDS.filter('userId === sUserId)
 
     println(s"The top recommendation on AllUsers filter with  user=${sUserId} from ALS model and exclude rated movies")
-    //The set to excluded does not need to subset of the first one. Do I have to sort since recommendDS shoudl be sorte
+    //The set to excluded does not need to subset of the first one. Do I have to sort since recommendDS should be sorte
     sUserRecommendDS.except(sUserMrDS).join(movieDS, 'movieId === 'id, "inner").
       select($"movieId", $"title", $"genres", $"userId", $"rating").sort(desc("rating")).show(false)
 

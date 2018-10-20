@@ -8,7 +8,7 @@ class MovieLensFuncTest extends FunSpec with SparkSessionTestWrapper {
   import spark.implicits._
 
   describe("#getMovieLensDataFrames") {
-    it("Should return DataFrameWithoutExcption") {
+    it("Should return DataFrameW without Excption") {
       val mlCommon = new MovieLensCommon(spark)
 
       val mlLatestBase = "/home/fandev/Downloads/ml-latest"

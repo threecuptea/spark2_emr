@@ -33,7 +33,7 @@
 
   <property>
     <name>yarn.scheduler.capacity.resource-calculator</name>
-    <value>org.apache.hadoop.yarn.util.resource.DefaultResourceCalculator</value>
+    <value>org.apache.hadoop.yarn.util.resource.DominantResourceCalculator</value>
     <description>
       The ResourceCalculator implementation to be used to compare 
       Resources in the scheduler.
@@ -128,6 +128,18 @@
       by the user? This can be used by administrators to place jobs in queues
       that are different than the one specified by the user.
       The default is false.
+    </description>
+  </property>
+
+  <property>
+    <name>yarn.scheduler.capacity.per-node-heartbeat.maximum-offswitch-assignments</name>
+    <value>1</value>
+    <description>
+      Controls the number of OFF_SWITCH assignments allowed
+      during a node's heartbeat. Increasing this value can improve
+      scheduling rate for OFF_SWITCH containers. Lower values reduce
+      "clumping" of applications on particular nodes. The default is 1.
+      Legal values are 1-MAX_INT. This config is refreshable.
     </description>
   </property>
 

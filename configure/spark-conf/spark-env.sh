@@ -20,7 +20,7 @@ export HADOOP_HOME=${HADOOP_HOME:-/usr/lib/hadoop}
 export HADOOP_CONF_DIR=${HADOOP_CONF_DIR:-/etc/hadoop/conf}
 export HIVE_CONF_DIR=${HIVE_CONF_DIR:-/etc/hive/conf}
 
-export STANDALONE_SPARK_MASTER_HOST=ip-10-102-214-210.us-west-2.compute.internal
+export STANDALONE_SPARK_MASTER_HOST=ip-10-227-38-49.us-west-2.compute.internal
 export SPARK_MASTER_PORT=7077
 export SPARK_MASTER_IP=$STANDALONE_SPARK_MASTER_HOST
 export SPARK_MASTER_WEBUI_PORT=8080
@@ -34,3 +34,4 @@ export HIVE_SERVER2_THRIFT_PORT=10001
 
 
 export SPARK_DAEMON_JAVA_OPTS="$SPARK_DAEMON_JAVA_OPTS -XX:OnOutOfMemoryError='kill -9 %p'"
+export SPARK_PUBLIC_DNS=ip-10-227-38-49.us-west-2.compute.internal
