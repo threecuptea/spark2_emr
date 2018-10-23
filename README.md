@@ -121,8 +121,8 @@ without any failed tasks or failed attempt. The specs and process are as the fol
       when I use m3.2xlarge which make very good use of memory and cores.
  
                         Memory used     Memory avail.  Core used     Core avail.
-      driver node        21.44GN        1.06GB           16 cores      0 core
-      non-driver node    20.06GB        2.44GB           15 cores      1 core
+            driver        21.44GB        1.06GB           16 cores      0 core
+            non-driver    20.06GB        2.44GB           15 cores      1 core
       
      
    g. I encountered 'OOM' Java Heap space issue in the beginning.  I solved it by using KryoSerializer 
