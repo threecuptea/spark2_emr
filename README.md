@@ -90,13 +90,15 @@ without any failed tasks or failed attempt. The specs and process are as the fol
        There are two approaches and both require join with movie partially.  Finally I stored 
        recommendForAllUsers of 25 movies to file in parquet format.  See the details in MovieLensALSEmr.
        
-   c.  The best result is 15 min that I got by using 2 m3.2xlarge nodes which has 16vcore and 23040MB memory each. 
-       I use EMR 5.13.0 that comes with Spark 2.3.0.  For some reason, its parallism better and the performance is far better 
-       than 5.17.0 that comes with Spark 2.3.1. I use the followings.  I did try c3.4xlarge which has the same specs.
+   c.  The best result is 15 min that I got by using 2 m3.2xlarge nodes which has 16vcore and 23040MB memory 
+       (I use 'yarn.nodemanager.resource.cpu-vcores' and 'yarn.nodemanager.resource.memory-mb' numbers in yarn-site.xml) each. 
+       I use EMR 5.13.0 that comes with Spark 2.3.0.  For some reason, its parallism and the performance is far better 
+       than 5.17.0 that comes with Spark 2.3.1. I did try c3.4xlarge which has the same specs.
        of vcore as well as memory but better computing power with cost of 1.5 times. That finish in 11 min 
    
    
-      --num-executors,6,--executor-cores,5,--executor-memory,6200m, --conf,spark.executor.extraJavaOptions='-XX:ThreadStackSize=2048',--conf,spark.sql.shuffle.partitions=40,--conf,spark.default.parallelism=40
+          --num-executors,6,--executor-cores,5,--executor-memory,6200m, --conf,spark.executor.extraJavaOptions='-XX:ThreadStackSize=2048',--conf,spark.sql.shuffle.partitions=40,--conf,spark.default.parallelism=40
+       
         
    d. Here is how I got here.  I allocate 3 executors per node and 5 cores per executor. Therefore, 
       non-driver node use 15 cores in total and driver node use (15 + 1) cores.  The 1 core is for ApplicationMaster to 
@@ -110,15 +112,15 @@ without any failed tasks or failed attempt. The specs and process are as the fol
       The most heavy stage of ALS cycles has 42 stages.  That's why I chose 40 for both parallelism and shuffle partitions.
       I did try 60 parallism and process in 16 minute
       
-   f. Prior to this choice,  I tried 3 m3.xlarge which has 8 vcores and 11520MB disk space.  I got 22 minutes from 
+   f. Prior to this choice,  I tried 3 m3.xlarge which has 8 vcores and 11520MB based upon yarn-site,xml. I got 22 minutes from 
       3 executors (1 executor each node) x 5 cores per executor and 23 minutes from 5 executors 
       (2 + 2 + 1, 1 is for the driver node) x 4 cores per executor.  Notice that I used 3 m3.xlarge but 2 m3.2xlarge.  
       No additional cost occure by upgrading to m3.2xlarge. The major improvements are on most heavy stage of ALS 
       cycle which dropped from 1.6 - 1.9 minute to 55-60 seconds and two joins at final stages due to better computing 
-      power. MovieLensALS is CPU dominant application.  c.4xlarge also has vcore 16 and 23040gb and better computing power.
-      processor and each has 8 cores. It can finish in 11 minute.  It reduces to 33-38-43 sec.  However, 
-      However, it is 1.5 costly; $0.140/hr vs. $0.210/hr.  I got the following information from ResourceManager console 
-      when I use m3.2xlarge which make very good use of memory and cores.
+      power. MovieLensALS is CPU dominant application.  c3.4xlarge also has vcore 16 and 23040gb and better computing power.
+      It can finish in 11 minute.  It reduces  most heavy stage of ALS cycle to 38-43 sec. 
+      However, it is 1.5 times costly; m3.2xlarge: 0.140/hr vs. c3.4xlarge:$0.210/hr.  I got the following information 
+      from ResourceManager console when I use m3.2xlarge which make very good use of memory and cores.
  
                         Memory used     Memory avail.  Core used     Core avail.
             driver        21.44GB        1.06GB           16 cores      0 core
@@ -134,7 +136,7 @@ without any failed tasks or failed attempt. The specs and process are as the fol
    h. I had failed tasks and failed attempts and even failed job due to multiple failed attempts.  I looked
       into stderr and found stackoverflow is the cause.  Therefore, I added *-XX:ThreadStackSize=2048*.  
       Notice this does not take away space from neither 'yarn.nodemanager.resource.memory-mb' in 
-      yarn-site.xml nor executor-memory which is part of the nodemanager memory which use heap instead of stack.
+      yarn-site.xml nor executor-memory which is part of the nodemanager memory. The latter uses heap instead of stack.
        
    i. I started to pay more attention to resource manager console. Node link page is very helpful.  It tells
       me how much memory and how many cores being allocated for each node.  I found out one alarming fact: 
@@ -216,7 +218,9 @@ Other notes
         spark.createDataFrame(inputRows, StructType(StructField("id", LongType, false) +: df.schema.fields))  
         
    d. To view parguet file
-         
+        
+        cd ~/Downloads/emr-spark
+        hadoop jar ./parquet-tools-1.8.3.jar --help (head display text format vertically)
         hadoop jar ./parquet-tools-1.8.3.jar cat --json \ 
         file:///home/fandev/Downloads/emr-spark/recommend-1539734851/recommendAll/part-00000-c000.snappy.parquet 
               

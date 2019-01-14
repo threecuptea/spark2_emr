@@ -1,0 +1,92 @@
+|userId|movieId|rating|
++------+-------+------+
+|1     |2762   |4.5   |
+|3     |3101   |3.0   |
+|3     |4474   |3.0   |
+|4     |3298   |3.0   |
+|4     |3408   |5.0   |
+|4     |3409   |2.0   |
+|4     |4084   |3.0   |
+|7     |8533   |4.0   |
+|7     |55247  |2.0   |
+|8     |912    |4.0   |
++------+-------+------+
+only showing top 10 rows
+
++---+----------------------------------+-------------------------------------------+
+|id |title                             |genres                                     |
++---+----------------------------------+-------------------------------------------+
+|1  |Toy Story (1995)                  |Adventure|Animation|Children|Comedy|Fantasy|
+|2  |Jumanji (1995)                    |Adventure|Children|Fantasy                 |
+|3  |Grumpier Old Men (1995)           |Comedy|Romance                             |
+|4  |Waiting to Exhale (1995)          |Comedy|Drama|Romance                       |
+|5  |Father of the Bride Part II (1995)|Comedy                                     |
+|6  |Heat (1995)                       |Action|Crime|Thriller                      |
+|7  |Sabrina (1995)                    |Comedy|Romance                             |
+|8  |Tom and Huck (1995)               |Adventure|Children                         |
+|9  |Sudden Death (1995)               |Action                                     |
+|10 |GoldenEye (1995)                  |Action|Adventure|Thriller                  |
++---+----------------------------------+-------------------------------------------+
+
+The baseline rmse= 1.0651.
+The RMSE of the bestModel from ALS on validation set is 1.0599
+The RMSE of the bestModel from ALS on test set is 1.0569, which is 0.77% over baseline.
+The best model was trained with param = {
+        als_3d062f77ea50-rank: 10,
+        als_3d062f77ea50-regParam: 0.5
+}
+
+The prediction on unratedMovie for user=60015 from ALS model
++-------+-----------------------------------------------------------+----------------------+------+---------+
+|movieId|title                                                      |genres                |userId|rating   |
++-------+-----------------------------------------------------------+----------------------+------+---------+
+|167770 |Christmas Time In South Park (2000)                        |(no genres listed)    |60015 |5.6577983|
+|49872  |Loose Change: Second Edition (2006)                        |Documentary|Mystery   |60015 |5.3170896|
+|168956 |Jimi Hendrix: Voodoo Child (2010)                          |Documentary           |60015 |5.11337  |
+|119798 |Final (2001)                                               |Drama|Sci-Fi|Thriller |60015 |4.882348 |
+|47904  |Notti bianche, Le (White Nights) (1957)                    |Drama|Romance         |60015 |4.858596 |
+|168776 |My Father Die (2016)                                       |Action|Drama          |60015 |4.8280435|
+|113045 |Boogie (Boogie, el aceitoso) (2009)                        |Action|Animation|Crime|60015 |4.7846937|
+|33603  |Simon (2004)                                               |Comedy|Drama          |60015 |4.777656 |
+|171777 |L'année sainte (1976)                                      |Comedy                |60015 |4.7419534|
+|66857  |Marius (1931)                                              |Comedy|Drama|Romance  |60015 |4.7071934|
+|89315  |Dying at Grace (2003)                                      |Documentary           |60015 |4.667774 |
+|158398 |World of Glory (1991)                                      |Comedy                |60015 |4.667774 |
+|108875 |Harvest (Stadt Land Fluss) (2011)                          |Drama|Romance         |60015 |4.6412473|
+|119909 |Sharpe's Eagle (1993)                                      |Action|Adventure|War  |60015 |4.634187 |
+|132333 |Seve (2014)                                                |Documentary|Drama     |60015 |4.6262846|
+|110167 |Judge and the Assassin, The (Juge et l'assassin, Le) (1976)|Crime|Drama           |60015 |4.6212845|
+|158314 |Daniel Tosh: Completely Serious (2007)                     |Comedy                |60015 |4.5995245|
+|132614 |Dior and I (2014)                                          |Documentary           |60015 |4.586483 |
+|65764  |Chinese Coffee (2000)                                      |Drama                 |60015 |4.582309 |
+|27223  |Humanité, L' (1999)                                        |Crime|Drama           |60015 |4.567091 |
++-------+-----------------------------------------------------------+----------------------+------+---------+
+
+The recommendation on unratedMovie for user=60015 from ALS model
++-------+-----------------------------------------------------------+----------------------+------+---------+
+|movieId|title                                                      |genres                |userId|rating   |
++-------+-----------------------------------------------------------+----------------------+------+---------+
+|167770 |Christmas Time In South Park (2000)                        |(no genres listed)    |60015 |5.6577983|
+|49872  |Loose Change: Second Edition (2006)                        |Documentary|Mystery   |60015 |5.3170896|
+|168956 |Jimi Hendrix: Voodoo Child (2010)                          |Documentary           |60015 |5.11337  |
+|119798 |Final (2001)                                               |Drama|Sci-Fi|Thriller |60015 |4.882348 |
+|47904  |Notti bianche, Le (White Nights) (1957)                    |Drama|Romance         |60015 |4.858596 |
+|168776 |My Father Die (2016)                                       |Action|Drama          |60015 |4.8280435|
+|113045 |Boogie (Boogie, el aceitoso) (2009)                        |Action|Animation|Crime|60015 |4.7846937|
+|33603  |Simon (2004)                                               |Comedy|Drama          |60015 |4.777656 |
+|171777 |L'année sainte (1976)                                      |Comedy                |60015 |4.7419534|
+|66857  |Marius (1931)                                              |Comedy|Drama|Romance  |60015 |4.7071934|
+|89315  |Dying at Grace (2003)                                      |Documentary           |60015 |4.667774 |
+|158398 |World of Glory (1991)                                      |Comedy                |60015 |4.667774 |
+|108875 |Harvest (Stadt Land Fluss) (2011)                          |Drama|Romance         |60015 |4.6412473|
+|119909 |Sharpe's Eagle (1993)                                      |Action|Adventure|War  |60015 |4.634187 |
+|132333 |Seve (2014)                                                |Documentary|Drama     |60015 |4.6262846|
+|110167 |Judge and the Assassin, The (Juge et l'assassin, Le) (1976)|Crime|Drama           |60015 |4.6212845|
+|158314 |Daniel Tosh: Completely Serious (2007)                     |Comedy                |60015 |4.5995245|
+|132614 |Dior and I (2014)                                          |Documentary           |60015 |4.586483 |
+|65764  |Chinese Coffee (2000)                                      |Drama                 |60015 |4.582309 |
+|27223  |Humanité, L' (1999)                                        |Crime|Drama           |60015 |4.567091 |
++-------+-----------------------------------------------------------+----------------------+------+---------+
+
+
+

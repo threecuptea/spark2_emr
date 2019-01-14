@@ -6,7 +6,7 @@ import org.apache.spark.storage.StorageLevel
 
 /**
   * Try to  create Rating sample either using stratified sampling using 'userId' column or randomsplit so that I can work on small sample and
-  * start writing FunSpec unit tests piece by piece before I use AWS to run integration test
+  * start writing FunSpec unit tests piece by piece before I deploy it to AWS to run integration test
   */
 object CreateRatingSample {
 
@@ -36,7 +36,7 @@ object CreateRatingSample {
     val mrDF = spark.read.option("header", true).schema(ratingsSchema).csv(ratingFilePath).persist(StorageLevel.MEMORY_ONLY_SER)
 
     //Create a stratified sample
-    val fractions  = mrDF.select('userId).rdd.map{
+    val fractions  = mrDF.select('userId).distinct().rdd.map{
       case Row(key: Int) => key -> ratio
     }.collectAsMap().toMap
 
