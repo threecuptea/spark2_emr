@@ -194,8 +194,7 @@ without any failed tasks or failed attempt. The specs and process are as the fol
               of user A with the memory share of user B. In this case, the DRF allocates more CPU and less memory 
               to the tasks run by user A, and allocates less CPU and more memory to the tasks run by user B.  It has
               advantages on mixed work load: ex. CPU-constrained Storm on YARN job and memory-constrained MapReduce job.     
-      
-            
+                  
 4. I always think that MovieLensALS should be generic.  I should be able to verify sample data locally before I 
    promote it to EMR.  It's very costly to prematurely promote codes to EMR and encounter Exception.  It will be good
    to consolidate MovieLensALS and MovieLensALSCv both too since a lot of codes are duplicate. I refactor codes to
