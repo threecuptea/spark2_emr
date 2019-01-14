@@ -35,7 +35,7 @@ object CreateRatingSample {
 
     val mrDF = spark.read.option("header", true).schema(ratingsSchema).csv(ratingFilePath).persist(StorageLevel.MEMORY_ONLY_SER)
 
-    //Create a stratified sample
+    //Create a stratified sample, Did I miss distinct when I first generate sample data.
     val fractions  = mrDF.select('userId).distinct().rdd.map{
       case Row(key: Int) => key -> ratio
     }.collectAsMap().toMap

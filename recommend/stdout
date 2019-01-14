@@ -1,40 +1,94 @@
-Rating counts and movie rating snapshot= 1000209, 24
+Rating Counts: 26024289
 +------+-------+------+
 |userId|movieId|rating|
 +------+-------+------+
-|1     |1193   |5.0   |
-|1     |661    |3.0   |
-|1     |914    |3.0   |
-|1     |3408   |4.0   |
-|1     |2355   |5.0   |
-|1     |1197   |3.0   |
-|1     |1287   |5.0   |
-|1     |2804   |5.0   |
-|1     |594    |4.0   |
-|1     |919    |4.0   |
+|1     |110    |1.0   |
+|1     |147    |4.5   |
+|1     |858    |5.0   |
+|1     |1221   |5.0   |
+|1     |1246   |5.0   |
+|1     |1968   |4.0   |
+|1     |2762   |4.5   |
+|1     |2918   |5.0   |
+|1     |2959   |4.0   |
+|1     |4226   |4.0   |
 +------+-------+------+
 only showing top 10 rows
 
-Movies count and its snapshot= 3883
-+---+----------------------------------+--------------------------------+
-|id |title                             |genres                          |
-+---+----------------------------------+--------------------------------+
-|1  |Toy Story (1995)                  |[Animation, Children's, Comedy] |
-|2  |Jumanji (1995)                    |[Adventure, Children's, Fantasy]|
-|3  |Grumpier Old Men (1995)           |[Comedy, Romance]               |
-|4  |Waiting to Exhale (1995)          |[Comedy, Drama]                 |
-|5  |Father of the Bride Part II (1995)|[Comedy]                        |
-|6  |Heat (1995)                       |[Action, Crime, Thriller]       |
-|7  |Sabrina (1995)                    |[Comedy, Romance]               |
-|8  |Tom and Huck (1995)               |[Adventure, Children's]         |
-|9  |Sudden Death (1995)               |[Action]                        |
-|10 |GoldenEye (1995)                  |[Action, Adventure, Thriller]   |
-+---+----------------------------------+--------------------------------+
+Movie Counts: 45843
++---+----------------------------------+-------------------------------------------+
+|id |title                             |genres                                     |
++---+----------------------------------+-------------------------------------------+
+|1  |Toy Story (1995)                  |Adventure|Animation|Children|Comedy|Fantasy|
+|2  |Jumanji (1995)                    |Adventure|Children|Fantasy                 |
+|3  |Grumpier Old Men (1995)           |Comedy|Romance                             |
+|4  |Waiting to Exhale (1995)          |Comedy|Drama|Romance                       |
+|5  |Father of the Bride Part II (1995)|Comedy                                     |
+|6  |Heat (1995)                       |Action|Crime|Thriller                      |
+|7  |Sabrina (1995)                    |Comedy|Romance                             |
+|8  |Tom and Huck (1995)               |Adventure|Children                         |
+|9  |Sudden Death (1995)               |Action                                     |
+|10 |GoldenEye (1995)                  |Action|Adventure|Thriller                  |
++---+----------------------------------+-------------------------------------------+
 only showing top 10 rows
 
-The baseline rmse =1.12The best model was trained with param = {
-	als_3f6153e60065-maxIter: 20,
-	als_3f6153e60065-rank: 12,
-	als_3f6153e60065-regParam: 0.1
+The baseline rmse= 1.07.
+The RMSE of the bestModel from ALS on validation set is 0.8122
+The RMSE of the bestModel on test set is 0.8116, which is 23.81% over baseline.
+The best model from ALS was trained with param = {
+	als_5eff5cbed81c-rank: 12,
+	als_5eff5cbed81c-regParam: 0.1
 }
-The RMSE of the bestModel on test set is 0.86, which is 23.14% over baseline.
+The recommendation on unratedMovie for user=6001 from ALS model
++-------+-------------------------------------------------+----------------------+------+----------+
+|movieId|title                                            |genres                |userId|prediction|
++-------+-------------------------------------------------+----------------------+------+----------+
+|66389  |AmericanEast (2008)                              |Drama                 |6001  |5.9622393 |
+|79045  |We Stand Alone Together (2001)                   |Documentary           |6001  |5.9585557 |
+|132792 |The Great Invisible (2014)                       |Documentary           |6001  |5.722864  |
+|142560 |Fair Play (2006)                                 |Thriller              |6001  |5.719943  |
+|119661 |The Story of Asya Klyachina (1966)               |Drama|Romance         |6001  |5.644762  |
+|166812 |Seeing Red: Stories of American Communists (1983)|(no genres listed)    |6001  |5.59519   |
+|173153 |Heroes Shed No Tears (1986)                      |Action                |6001  |5.5827227 |
+|145893 |Special Section (1975)                           |Drama|War             |6001  |5.5534716 |
+|129293 |Bandaged (2009)                                  |Thriller              |6001  |5.4979687 |
+|151615 |Hello Stranger (2010)                            |Drama                 |6001  |5.491114  |
+|129516 |Poison (1951)                                    |Comedy                |6001  |5.450015  |
+|149536 |Pizza (2005)                                     |Comedy|Romance        |6001  |5.4443126 |
+|170683 |Senki szigete (2014)                             |Comedy|Romance        |6001  |5.433809  |
+|109806 |Story of Yonosuke, A (Yokomichi Yonosuke) (2013) |Comedy|Drama          |6001  |5.422834  |
+|117362 |If You Are the One (2008)                        |Comedy|Romance        |6001  |5.407999  |
+|124269 |The Moving Finger (1985)                         |(no genres listed)    |6001  |5.371499  |
+|114931 |Benigni (2009)                                   |Animation|Comedy|Drama|6001  |5.358648  |
+|173479 |The Boss's Daughter (2016)                       |Comedy|Drama|Romance  |6001  |5.358274  |
+|138962 |Electra (1962)                                   |Action                |6001  |5.35553   |
+|146012 |Little Tragedies (1980)                          |Children|Drama        |6001  |5.345686  |
++-------+-------------------------------------------------+----------------------+------+----------+
+only showing top 20 rows
+
+The top recommendation on AllUsers filter with  user=6001 from ALS model and exclude rated movies
++-------+-------------------------------------------------+----------------------+------+---------+
+|movieId|title                                            |genres                |userId|rating   |
++-------+-------------------------------------------------+----------------------+------+---------+
+|66389  |AmericanEast (2008)                              |Drama                 |6001  |5.9622393|
+|79045  |We Stand Alone Together (2001)                   |Documentary           |6001  |5.9585557|
+|132792 |The Great Invisible (2014)                       |Documentary           |6001  |5.722864 |
+|142560 |Fair Play (2006)                                 |Thriller              |6001  |5.719943 |
+|119661 |The Story of Asya Klyachina (1966)               |Drama|Romance         |6001  |5.644762 |
+|166812 |Seeing Red: Stories of American Communists (1983)|(no genres listed)    |6001  |5.59519  |
+|173153 |Heroes Shed No Tears (1986)                      |Action                |6001  |5.5827227|
+|145893 |Special Section (1975)                           |Drama|War             |6001  |5.5534716|
+|129293 |Bandaged (2009)                                  |Thriller              |6001  |5.4979687|
+|151615 |Hello Stranger (2010)                            |Drama                 |6001  |5.491114 |
+|129516 |Poison (1951)                                    |Comedy                |6001  |5.450015 |
+|149536 |Pizza (2005)                                     |Comedy|Romance        |6001  |5.4443126|
+|170683 |Senki szigete (2014)                             |Comedy|Romance        |6001  |5.433809 |
+|109806 |Story of Yonosuke, A (Yokomichi Yonosuke) (2013) |Comedy|Drama          |6001  |5.422834 |
+|117362 |If You Are the One (2008)                        |Comedy|Romance        |6001  |5.407999 |
+|124269 |The Moving Finger (1985)                         |(no genres listed)    |6001  |5.371499 |
+|114931 |Benigni (2009)                                   |Animation|Comedy|Drama|6001  |5.358648 |
+|173479 |The Boss's Daughter (2016)                       |Comedy|Drama|Romance  |6001  |5.358274 |
+|138962 |Electra (1962)                                   |Action                |6001  |5.35553  |
+|146012 |Little Tragedies (1980)                          |Children|Drama        |6001  |5.345686 |
++-------+-------------------------------------------------+----------------------+------+---------+
+only showing top 20 rows

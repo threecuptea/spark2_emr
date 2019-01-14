@@ -195,7 +195,43 @@ without any failed tasks or failed attempt. The specs and process are as the fol
               to the tasks run by user A, and allocates less CPU and more memory to the tasks run by user B.  It has
               advantages on mixed work load: ex. CPU-constrained Storm on YARN job and memory-constrained MapReduce job.     
             
+4. I always think that MovieLensALS should be generic.  I should be able to verify sample data locally before I 
+   promote it to EMR.  It's very costly to prematurely promote codes to EMR and encounter Exception.  It will be good
+   to consolidate MovieLensALS and MovieLensALSCv both too since a lot of codes are duplicate. I refactor codes to
+   make MovieLensALS and MovieLenCommon supporting running it in AWS-EMR as well as locally and support ALS 
+   standalone estimator as well as Cross Validator using ALS on 1018-12-31 (A New Year Resolution!!!).
    
+   The new command line usage is as the followings:
+   
+          MovieLensALS [ALS or ALSCv] [s3-output-path] or 
+          MovieLensALS [ALS or ALSCv] [local-rating-path] [ocal-movie-path] [local-output-path] 
+        
+   However, support running sample/ partial data locally does throw a curve ball
+   
+   a. Original test userId(=6001) is no longer in sample data set.  I have to find a new one(=60015)
+   
+   b. I have to fix the seed to generate sample data, otherwise I cannot expect designated test userId will be there.
+   
+   c. 5% sample data set is much smaller than original data set.  The RMSE of the bestModel from ALS on sample data set 
+      is only 1%- 3% over the RMSE of the baseline. The RMSE of the bestModel from ALS on original data set (26 million)
+      is 23.81% over baseline RMSE.
+      
+   d. The paramMap obtained from the best model on sample data is (rank= 10, regParam: 0.1) and the paramMap obtained 
+      from the best model on the original 26 million data set is (rank= 12, regParam: 0.1)
+   
+   f. The above suggest that I might not be able to generalize result obtained from sample data set to general 
+      population.  That might be misleading.  However, it does help me to detect unexpected exception.
+      
+   e. Local environment has limited resources: memory and CPU.  That might require additional tuning.  I use the 
+      followings to run it locally
+      
+        $SPARK_HOME/bin/spark-submit --master local[*] --conf spark.sql.shuffle.partitions=10 --conf spark.default.parallelism=10 \
+          * --num-executors 1 --executor-cores 5 --executor-memory 2000m --conf spark.executor.extraJavaOptions=-'XX:ThreadStackSize=2048' \
+          * --class org.freemind.spark.recommend.MovieLensALS target/scala-2.11/spark2_emr_2.11-1.0.jar \
+          * ALS ~/Downloads/ml-latest/ratings-sample.csv.gz ~/Downloads/ml-latest/movies.csv recommend-$(date +%s)
+      
+      which is very different from what I configured AWS-EMR cluster.
+      
 Other notes
    
    a. CSV data source does not support array<string> data type.  I have to use udf
@@ -235,7 +271,8 @@ Other notes
    
    g. AWS instances:        
       General purpose: m3.xlarge (8 cores), m3.2xlarge (16 cores)
-      Compute optimized: c3.xlarge, c3.2xlarge(15gb, 8vcore), c3.4xlarge, c3.8xlarge
+      Compute optimized: c3.xlarge, c3.2xlarge(15gb, 8vcore), c3.4xlarge with the same spec. asm3.2xlarge but CPU with
+      more computing power, c3.8xlarge
       Memory optimized: r3.xlarge, r3.2xlarge, r3.4xlarge, r3.8xlarge
       
        
