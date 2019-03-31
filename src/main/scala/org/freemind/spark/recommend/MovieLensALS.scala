@@ -20,6 +20,8 @@ import org.apache.spark.sql.SparkSession
   *
   * I exclude those rated to make results from those two approaches the same same.
   *
+  * ALS recommendation is Collaborative Filtering recommendation system.
+  *
   * Run it ALS locally
   * $SPARK_HOME/bin/spark-submit --master local[*] --conf spark.sql.shuffle.partitions=10 --conf spark.default.parallelism=10 \
   * --num-executors 1 --executor-cores 5 --executor-memory 2000m --conf spark.executor.extraJavaOptions=-'XX:ThreadStackSize=2048' \
